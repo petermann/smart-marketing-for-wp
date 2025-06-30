@@ -1007,7 +1007,8 @@ class EgoiApiV3 {
 		curl_close($ch);
 
 		if($httpCode == 409 && $editContact == 'true'){
-			return  $this->editContact( $listID, $resp['errors']['contacts'][0], $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
+			$contact_id = isset($resp['errors']['contacts'][0]) ? $resp['errors']['contacts'][0] : '';
+			return $this->editContact( $listID, $contact_id, $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
 		} elseif ( $httpCode == 201){
             if ( ! empty( $tags ) && isset( $resp['contact_id'] ) && $tags[0] !== "0" ) {
 				$this->attachTag( $listID, $resp['contact_id'], $tags );
