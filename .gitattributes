@@ -1,0 +1,20 @@
+# git
+.gitignore export-ignore
+.gitattributes export-ignore
+
+# vscode
+.vscode export-ignore
+
+# gulp
+gulpfile.js export-ignore
+
+# Ignore only the root package.json
+/package.json export-ignore
+
+# composer
+composer.json export-ignore
+composer.lock export-ignore
+/vendor/ export-ignore
+
+# misc
+.DS_Store export-ignore
