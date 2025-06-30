@@ -1076,7 +1076,7 @@ class EgoiApiV3 {
 	 * If doesnt exists creates one tag
 	 */
 	public function getTag( $name ) {
-		$tags = json_decode( $this->getTags(), true );
+		$tags = json_decode( $this->getTags() );
 
 		if ( isset( $tags['status'] ) || isset( $tags['error'] ) ) {
 			return $tags;
