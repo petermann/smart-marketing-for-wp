@@ -275,11 +275,14 @@ class EgoiApiV3 {
 		'convertCart'              => '/{domain}/carts',
 		'importContactsBulk'       => '/lists/{list_id}/contacts/actions/import-bulk',
 		'ping'					   => '/ping',
-	);
+        'getClient'             => '/my-account',
+        'importOrdersBulk'         => '/lists/{list_id}/orders'
+    );
 
 	protected $apiKey;
 	protected $headers;
-	public function __construct( $apiKey ) {
+    protected $_valid = [];
+    public function __construct( $apiKey ) {
 		$this->apiKey  = $apiKey;
 		$this->headers = array( 'ApiKey: ' . $this->apiKey, 'PluginKey: ' . self::PLUGINKEY, 'Content-Type: application/json' );
 	}
@@ -334,12 +337,20 @@ class EgoiApiV3 {
 			}
 		}
 
-		$data = $this->getCountriesCurrencies( $cellphone );
+		$data = $this->getCountriesCurrencies();
 		if ( empty( $data ) ) {
 			return $cellphone;
 		}
-		$language = get_option( 'WPLANG' );
-		foreach ( $data['items'] as $country ) {
+
+        $wplang = get_option( 'WPLANG' );
+        if ( !empty($wplang) ) {
+            $language = $wplang;
+        } else {
+            $raw_locale = get_locale();
+            $parts        = preg_split( '/[_-]/', $raw_locale );
+            $language = isset( $parts[1] ) ? strtoupper( $parts[1] ) : strtoupper( $parts[0] );
+        }
+        foreach ( $data['items'] as $country ) {
 			if ( strpos( $language, $country['iso_code'] ) !== false ) {
 				return $country['country_code'] . '-' . $cellphone;
 			}
@@ -769,21 +780,88 @@ class EgoiApiV3 {
 	public function importContactsBulk( $listId, $data ) {
 		$path   = self::APIV3 . $this->replaceUrl( self::APIURLS[ __FUNCTION__ ], '{list_id}', $listId );
 
-		$client = new ClientHttp(
-			$path,
-			'POST',
-			$this->headers,
-			$data
-		);
+      $ch = curl_init();
 
-		if ( $client->success() !== true ) {
-			return $this->processErrors( $client->getError() );
-		}
+      // Set the URL
+      curl_setopt($ch, CURLOPT_URL, $path);
 
-		return $client->getCode() == 200
-			? $client->getResponse()
-			: $this->processErrors( $client->getResponse() );
+      // Set the request method
+      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+
+      // Set the timeout
+      curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+      // Set the request body if provided
+      if (!empty($data)) {
+         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+      }
+
+      // Set headers if provided
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+
+
+      // Return the response instead of outputting it
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+      // Execute the request
+      curl_exec($ch);
+
+      // Get the HTTP status code
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+      // Close the cURL session
+      curl_close($ch);
+
+		return $httpCode == 200
+			? true
+			: false;
 	}
+
+    /**
+     * Import Orders Bulk
+     * @param $listId
+     * @param $data
+     * @return false|string
+     */
+    public function importOrdersBulk( $listId, $data ) {
+        $path   = self::APIV3 . $this->replaceUrl( self::APIURLS[ __FUNCTION__ ], '{list_id}', $listId );
+
+        $ch = curl_init();
+
+        // Set the URL
+        curl_setopt($ch, CURLOPT_URL, $path);
+
+        // Set the request method
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+
+        // Set the timeout
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        // Set the request body if provided
+        if (!empty($data)) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        }
+
+        // Set headers if provided
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+
+
+        // Return the response instead of outputting it
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        // Execute the request
+        curl_exec($ch);
+
+        // Get the HTTP status code
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        // Close the cURL session
+        curl_close($ch);
+
+        return $httpCode == 201
+            ? true
+            : false;
+    }
 
 	/**
 	 * Create List
@@ -824,8 +902,7 @@ class EgoiApiV3 {
 	/**
 	 * Add contact using API v3
 	*/
-	public function addContact( $listID, $email, $name = '', $lname = '', $extra_fields = array(), $option = 0, $ref_fields = array(), $status = 'active', $tags = array() ) {
-
+	public function addContact( $listID, $email, $name = '', $lname = '', $extra_fields = array(), $option = 0, $ref_fields = array(), $status = 'active', $tags = array(), $editContact = true ) {
 		$full_name = explode( ' ', $name );
 		$fname = $name;
 
@@ -833,9 +910,8 @@ class EgoiApiV3 {
 
 			$lname = end($full_name);
 			$fname = implode(' ', array_slice($full_name,0,-1));
-			
-		}
 
+		}
 		$tel  = (isset($ref_fields['tel']) && !empty($ref_fields['tel']) && $ref_fields['tel'] != '-') ? $this->advinhometerCellphoneCode($ref_fields['tel']) : '';
 		$cell = (isset($ref_fields['cell']) && !empty($ref_fields['cell']) && $ref_fields['cell'] != '-' ) ? $this->advinhometerCellphoneCode($ref_fields['cell']) : '';
 		$bd   = isset($ref_fields['bd']) ? $ref_fields['bd'] : '';
@@ -848,12 +924,12 @@ class EgoiApiV3 {
 			'status'     => $status,
 		);
 
-		// telephone
+        // telephone
 		if ( !empty($tel) ) {
-			$params['cellphone'] = $tel;
+			$params['phone'] = $tel;
 		}
 		// cellphone
-		if ( !empty($cell) && empty($tel) ) {
+		if ( !empty($cell)) {
 			$params['cellphone'] = $cell;
 		}
 		// birthdate
@@ -894,31 +970,58 @@ class EgoiApiV3 {
 			);
 		}
 
-		$url = self::APIV3 . '/lists/' . $listID . '/contacts';
+		$path = self::APIV3 . '/lists/' . $listID . '/contacts';
 
-		$client = new ClientHttp( $url, 'POST', $this->headers, $body );
+		$ch = curl_init();
 
-		if ( $client->success() !== true ) {
-			return $this->processErrors( $client->getError() );
-		}
-	
-		$resp = json_decode( $client->getResponse(), true );
+		// Set the URL
+		curl_setopt($ch, CURLOPT_URL, $path);
 
-		if(isset($resp) && isset($resp['status']) && $resp['status'] == 409){
-			return $this->editContact( $listID, $resp['errors']['contacts'][0], $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
-		} else if(isset($resp) && isset($resp['status']) && $resp['status'] == 422){
-			return $resp;
-		}
+		// Set the request method
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
 
-		if ( ! empty( $tags ) && isset( $resp['contact_id'] ) ) {
-			$this->attachTag( $listID, $resp['contact_id'], $tags );
+		// Set the timeout
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+		// Set the request body if provided
+		if (!empty($body)) {
+		   curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 		}
 
-		return $resp['contact_id'];
+		// Set headers if provided
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+
+
+		// Return the response instead of outputting it
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+		// Execute the request
+		$resp = curl_exec($ch);
+
+		$resp = json_decode($resp, true);
+
+		// Get the HTTP status code
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+		// Close the cURL session
+		curl_close($ch);
+
+		if($httpCode == 409 && $editContact == 'true'){
+			return  $this->editContact( $listID, $resp['errors']['contacts'][0], $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
+		} elseif ( $httpCode == 201){
+            if ( ! empty( $tags ) && isset( $resp['contact_id'] ) && $tags[0] !== "0" ) {
+				$this->attachTag( $listID, $resp['contact_id'], $tags );
+			}
+			return $resp['contact_id'];
+		}
+
+
+		return false;
+
 	}
 
 	public function attachTag( $list_id, $contact_id, $tags = array() ) {
-		$url = self::APIV3 . '/lists/' . $list_id . '/contacts/actions/attach-tag';
+		$path = self::APIV3 . '/lists/' . $list_id . '/contacts/actions/attach-tag';
 
 		foreach ( $tags as $tag ) {
 			$body = array(
@@ -926,11 +1029,44 @@ class EgoiApiV3 {
 				'tag_id'   => $tag,
 			);
 
-			$client = new ClientHttp( $url, 'POST', $this->headers, $body );
-
-			if ( $client->success() !== true ) {
-				return $this->processErrors( $client->getError() );
+			$ch = curl_init();
+	  
+			// Set the URL
+			curl_setopt($ch, CURLOPT_URL, $path);
+	  
+			// Set the request method
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+	  
+			// Set the timeout
+			curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+	  
+			// Set the request body if provided
+			if (!empty($body)) {
+			   curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 			}
+	  
+			// Set headers if provided
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+	  
+	  
+			// Return the response instead of outputting it
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	  
+			// Execute the request
+			$resp = curl_exec($ch);
+	
+			$resp = json_decode($resp, true);
+	  
+			// Get the HTTP status code
+			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+			if($httpCode != 200){
+				return false;
+			}
+	  
+			// Close the cURL session
+			curl_close($ch);
+	  
 		}
 		return true;
 	}
@@ -1096,39 +1232,52 @@ class EgoiApiV3 {
 		return $extra_fields;
 	}
 
-	public function editContact( $listID, $contact_id, $fname = '', $lname = ' ', $extra_fields = array(), $option = 0, $ref_fields = array(), $status = 'active', $tags = array() ) {
+	public function editContact( $listID, $contact_id, $fname = '', $lname = '', $extra_fields = array(), $option = 0, $ref_fields = array(), $status = 'active', $tags = array() ) {
 
 		if(! $lname){
 			$full_name = explode( ' ', $fname );
 			$lname =  sizeof($full_name) == 1 ? ' ' : end($full_name);
 			$fname = sizeof($full_name) > 1 ? implode(' ', array_slice($full_name,0,-1)) : $fname;
+			$lname = trim($lname);
+			$fname = trim($fname);
 		}
 
-		$params = array(
-			'status' => $status,
-			'first_name' => $fname,
-			'last_name' => $lname
-		);
+		$params = array();
 
-		$tel  = isset($ref_fields['tel']) ? $ref_fields['tel'] : '';
-		$cell = isset($ref_fields['cell']) ? $ref_fields['cell'] : '';
+        $tel  = (isset($ref_fields['tel']) && !empty($ref_fields['tel']) && $ref_fields['tel'] != '-') ? $this->advinhometerCellphoneCode($ref_fields['tel']) : '';
+        $cell = (isset($ref_fields['cell']) && !empty($ref_fields['cell']) && $ref_fields['cell'] != '-' ) ? $this->advinhometerCellphoneCode($ref_fields['cell']) : '';
 		$bd   = isset($ref_fields['bd']) ? $ref_fields['bd'] : '';
 		$lang = isset($ref_fields['lang']) ? $ref_fields['lang'] : '';
 
+		//status
+		if(!empty($status)) {
+			$params['status'] = $status;
+		}
+
+		// first name
+		if(!empty($fname)) {
+			$params['first_name'] = $fname;
+		}
+
+		// last name
+		if(!empty($lname)) {
+			$params['last_name'] = $lname;
+		}
+
 		// telephone
-		if ( !empty($tel) ) {
+		if (!empty($tel) ) {
 			$params['cellphone'] = $tel;
 		}
 		// cellphone
-		if ( !empty($cell) && empty($tel) ) {
+		if (!empty($cell) && empty($tel) ) {
 			$params['cellphone'] = $cell;
 		}
 		// birthdate
-		if ( !empty($bd) ) {
+		if (!empty($bd) ) {
 			$params['birth_date'] = $bd;
 		}
 		// language
-		if ( !empty($lang) ) {
+		if (!empty($lang) ) {
 			$params['language'] = $lang;
 		}
 
@@ -1152,6 +1301,7 @@ class EgoiApiV3 {
 			}
 		}
 
+
 		if ( empty( $params_extra ) ) {
 			$body = array( 'base' => $params );
 		} else {
@@ -1160,6 +1310,7 @@ class EgoiApiV3 {
 				'extra' => $params_extra,
 			);
 		}
+
 
 		$url = self::APIV3 . '/lists/' . $listID . '/contacts/' . $contact_id;
 
@@ -1197,40 +1348,89 @@ class EgoiApiV3 {
 			$items = array();
 		}
 		foreach ( $items as $item ) {
-			$output[] = array(
+            $product = $item->get_product();
+            $output[] = array(
+
 				'product_identifier' => $item->get_product_id(),
 				'name'               => $item->get_name(),
-				'price'              => number_format( $item->get_subtotal(), 2 ),
+                'price'              => number_format( $product->get_price(), 2 ),
 			);
 		}
 		return $output;
 	}
 
-	public function convertOrder( $order, $contact, $domain ) {
-		$path = self::APIV3 . $this->replaceUrl( self::APIURLS[ __FUNCTION__ ], '{domain}', $domain );
+    public function convertOrder( $order, $contact, $domain ) {
 
-		$products = self::getProductsFromOrder( $order );
+        $path = self::APIV3 . $this->replaceUrl( self::APIURLS[ __FUNCTION__ ], '{domain}', $domain );
 
-		$payload = array(
-			'order_total' => number_format( $order->get_total(), 2 ),
-			'order_id'    => $order->get_id(),
-			'cart_id'     => '',
-			'contact'     => $contact,
-			'products'    => $products,
-		);
+        $products = self::getProductsFromOrder( $order );
+        if ( empty( $products ) ) {
+            return false;
+        }
 
-		$client = new ClientHttp(
-			$path,
-			'POST',
-			$this->headers,
-			$payload
-		);
 
-		if ( $client->success() !== true || $client->getCode() != 202 ) {
-			return false;
-		}
-		return json_decode( $client->getResponse(), true );
-	}
+        $order_status = self::getOrderStatus( $order );
+        $order_date = $order->get_date_created();
+
+        $payload = array(
+            'order_total' => number_format( $order->get_total(), 2 ),
+            'order_id'    => $order->get_id(),
+            'order_status' => $order_status,
+            'cart_id'     => '',
+            'order_date'  => $order_date ? $order_date->format('Y-m-d H:i:s') : null,
+            'contact'     => $contact,
+            'products'    => $products,
+        );
+
+
+
+        $client = new ClientHttp(
+            $path,
+            'POST',
+            $this->headers,
+            $payload
+        );
+
+        if ( $client->success() !== true || $client->getCode() != 202 ) {
+            return false;
+        }
+        return json_decode( $client->getResponse(), true );
+    }
+
+    /**
+     * @param $order
+     * @return null|string|string[]
+     */
+    private function getOrderStatus( $order) {
+
+        $wooStatus = $order->get_status();
+
+        switch ( $wooStatus ) {
+            // Map Egoi Created Status
+            case 'checkout-draft':
+                return 'created';
+
+            // Map Egoi Pending Status
+            case 'on-hold':
+            case 'pending':
+            case 'processing':
+                return 'pending';
+
+            // Map Egoi Completed Status
+            case 'completed':
+            case 'refunded':
+                return 'completed';
+
+            // Map Egoi Canceled Status
+            case 'cancelled':
+            case 'failed':
+                return 'canceled';
+
+            // Default case
+            default:
+                return 'unknown'; // Fallback to "created" if the status is unrecognized
+        }
+    }
 
 	private static function getProductsFromCart( $cartObj, $variations = false ) {
 		$cart = array(
@@ -1451,6 +1651,10 @@ class ClientHttp {
 			$this->http_code = $res['response']['code'];
 			$this->response  = $res['body'];
 			$this->headers   = $res['headers'];
+            if ( $res['response']['code'] == 403 ) {
+                do_action( 'api_error_notice' );
+                update_option( 'api_error_status', array( 'active' => true, 'code' => 403 ) );
+            }
 		}
 
 	}

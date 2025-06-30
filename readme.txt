@@ -1,27 +1,28 @@
- === Plugin Name ===
-Contributors: E-goi
+ === Smart Marketing SMS and Newsletters Forms ===
+Contributors: egoi
 Donate link:
-Tags: Newsletter, Subscribe, E-goi, Widget, Subscribe Newsletter, Newsletter Populator, Send Newsletter, Marketing Automation, E-Mail Gatherer, egoi, Mailing List, E-mail Marketing, Email Marketing, Marketing
+Tags: Email Marketing, Newsletter, Marketing Automation, E-goi, Ecommerce
 Requires at least: 4.7
-Tested up to: 6.4.2
-Stable tag: 5.0.2
+Tested up to: 6.7.1
+Stable tag: 5.1.03
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Save Time, Increase Traffic, and Transform Business Opportunities (Leads) into Trusted Customers!
 
 == Description ==
 
 **Poupe Tempo, Aumente Tráfego e Transforme Oportunidades de Negócio (Leads) em Clientes Fiéis!**
 
-É muito fácil personalizar as cores, o botão e os tipo de letra do seu formulário e até pode posicioná-lo onde quiser!
+É muito fácil personalizar as cores, o botão e o tipo de letra do seu formulário e até pode posicioná-lo onde quiser!
 
 Está disponível neste plugin a instalação no seu site, de forma muito simples, um sistema de Web Push para aumentar o alcance da sua comunicação e enviar mensagens que são realmente abertas no navegador dos seus clientes! E ainda pode escolher as categorias ou tags que quiser para personalizar os conteúdos ou produtos que quer enviar por email ou Web Push para os seus subscritores ou clientes!
 
 **Usa Woocommerce?**
 
-Então não deixe de activar o Track & Engage, um sistema para rastrear todo o comportamento dos clientes no seu e-commerce que pode aproveitar para realizar campanhas em tempo real! (ex: carrinho abandonado, retargeting, up selling e cross selling, etc)
+Então não deixe de ativar o Track & Engage, um sistema para rastrear todo o comportamento dos clientes no seu e-commerce que pode aproveitar para realizar campanhas em tempo real! (ex: carrinho abandonado, retargeting, up selling e cross selling, etc)
 
 **Novidades**
-* E-goi Email Transacional (SMTP) -  Envio todos os emails do seu WordPress pelo E-goi
+* E-goi E-mail Transacional (SMTP) - Envio todos os e-mails do seu WordPress pelo E-goi
 
 **Funcionalidades:**
 * 100% Gratuito
@@ -168,6 +169,71 @@ You can create and update your lists, see how many subscribers you have, but you
 
 
 == Changelog ==
+= 5.1.03 =
+- Fix the behaviour of the newletter option in the Post Comment section
+- Add new Validation for warning in contact forms
+- Ensured consistent behavior of the newsletter subscription checkbox selection
+- Added validation to prevent warnings.
+
+= 5.1.02 =
+- Add a ReplyTo to mailer
+
+= 5.1.01 =
+- Add a “Telephone” field to the Elementor form.
+- Add a validation on the configuration page if WooCommerce is not installed.
+- Enforce proper formatting when validating phone numbers.
+- Ensured consistent behavior of the newsletter subscription checkbox selection
+
+= 5.1.00 =
+- Add new Functionality to track all order status by Api
+
+= 5.0.16 =
+- Uniformize TAX for Sale Price on Products
+
+= 5.0.15 =
+- Add Validation to Tags on RSS Feed
+
+= 5.0.14 =
+- Bump version
+
+= 5.0.13 =
+- Fix Elementor form submission
+
+= 5.0.12 =
+- Fix Admin Validation
+
+= 5.0.11 =
+- Fix Scheme Color for new Elementor Version
+- Fix contact not entry with new contact on gravity form
+
+= 5.0.10 =
+- Fix Api Validation for E-goi Go Send Plan
+- Add Webpush Campaigns Functionality
+- Fix Vulnerability on Ajax Actions
+
+= 5.0.9 =
+- Fix tag not entry with new contact on contact form 7
+
+= 5.0.8 =
+- Fix save not working when plugin is enabled
+- Change readme to match wordpress.org specs
+- Bumped version tag
+- Bumped Tested up to tag
+
+= 5.0.7 =
+- Minor contact sync improvements
+
+= 5.0.6 = 
+- Minor Stability improvs
+
+= 5.0.5 = 
+- Added required fields on simple forms
+
+= 5.0.4 =
+- Remove some warnings
+
+= 5.0.3 =
+- Change importContactsBulk method
 
 = 5.0.2 =
 - Map subscriber on new order fixed 

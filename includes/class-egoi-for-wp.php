@@ -103,6 +103,7 @@ class Egoi_For_Wp {
 	 */
 	protected $restUrlv3 = 'https://api.egoiapp.com';
 
+
 	/**
 	 * Plugin Key
 	 *
@@ -373,6 +374,8 @@ class Egoi_For_Wp {
 	);
 	const CACHED_CALLS      = array( 'getLists', 'getTags' );
 	const PURGE_CACHE_CALLS = array( 'createList', 'addTag' );
+
+    protected $_valid = [];
 	/**
 	 * Constructor
 	 *
@@ -422,10 +425,9 @@ class Egoi_For_Wp {
 	 * @since    1.1.2
 	 */
 	protected function setClient() {
-
 		if ( ! is_admin() ) {
 			if ( ! get_option( 'egoi_client' ) ) {
-				add_option( 'egoi_client', $this->getClient() );
+                add_option( 'egoi_client', $this->getAccountEgoi() );
 			}
 		}
 	}
@@ -762,28 +764,37 @@ class Egoi_For_Wp {
 		return $this->version;
 	}
 
-	/**
-	 * @param bool $apikey
-	 * @return mixed
-	 */
-	public function getClient( $apikey = false ) {
+    /**
+     * @param bool $apikey
+     * @return mixed
+     */
+    public function getAccountEgoi($apikey = false)
+    {
+        $url = $this->restUrlv3 . '/my-account';
 
-		$url = $this->restUrl . 'getClientData&' . http_build_query(
-			array(
-				'functionOptions' => array(
-					'apikey'     => $apikey ?: $this->_valid['api_key'],
-					'plugin_key' => $this->plugin,
-				),
-			),
-			'',
-			'&'
-		);
+        $headers = [
+            'ApiKey: ' . ($apikey ?: $this->_valid['api_key']),
+            'PluginKey: ' . $this->plugin,
+            'Content-Type: application/json',
+        ];
 
-		$result_client = json_decode( $this->_getContent( $url ) );
-		if ( $result_client->Egoi_Api->getClientData->status == 'success' ) {
-			return $result_client->Egoi_Api->getClientData;
+        $result_client = json_decode($this->_getContent($url, $headers));
+        $title = isset($result_client->title) ? $result_client->title : '';
+
+		if ($title === 'Unauthorized') {
+			return (object) [
+				'ERROR' => 'UNAUTHORIZED',
+				'status' => 'error',
+			];
+		} elseif ($title === 'Forbidden') {
+			return (object) [
+				'ERROR' => 'FORBIDDEN',
+				'status' => 'error',
+			];
 		}
-	}
+		return $result_client;
+
+    }
 
 	/**
 	 * Check if a tag exists, if not creates, returns id
@@ -989,12 +1000,23 @@ class Egoi_For_Wp {
 
 		if ( is_wp_error( $res ) ) {
 			return '{}';
-		}
+		}elseif ($res['response']['code'] == 403) {
+            do_action( 'api_error_notice' );
+            update_option('api_error_status', array('active' => true, 'code' => 403));
+
+            return $res['body'];
+        }
 
 		return $res['body'];
 	}
 
-	public function get_listener( $user_id ) {
+    public function register_api_error_notice() {
+        add_action( 'api_error_notice', function() {
+            echo '<div class="error"><p>' . esc_html( 'Access has been denied. Check your API key settings or contact E-goi support.' ) . '</p></div>';
+        } );
+    }
+
+    public function get_listener( $user_id ) {
 
 		$listen = new Egoi_For_Wp_Listener( $this->get_plugin_name(), $this->get_version() );
 		if ( $user_id ) {

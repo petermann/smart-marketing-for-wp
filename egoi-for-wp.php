@@ -10,7 +10,7 @@
  * Plugin Name:       Smart Marketing SMS and Newsletters Forms
  * Plugin URI:        https://www.e-goi.com/en/o/smart-marketing-wordpress/
  * Description:       Smart Marketing for WP adds E-goi's multichannel automation features to WordPress.
- * Version:           5.0.2
+ * Version:           5.1.03
 
  * Author:            E-goi
  * Author URI:        https://www.e-goi.com
@@ -26,7 +26,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 
-define( 'EFWP_SELF_VERSION', '5.0.2' );
+define( 'EFWP_SELF_VERSION', '5.1.03' );
 
 function activate_egoi_for_wp() {
 
@@ -67,6 +67,13 @@ add_action( 'wp_ajax_efwp_add_users', 'efwp_add_users' );
 function efwp_add_users() {
 	$admin = new Egoi_For_Wp_Admin( 'smart-marketing-for-wp', EFWP_SELF_VERSION );
 	return $admin->users_queue();
+}
+
+// HOOK SYNC ORDERS
+add_action( 'wp_ajax_efwp_add_orders', 'efwp_add_orders' );
+function efwp_add_orders() {
+    $admin = new Egoi_For_Wp_Admin( 'smart-marketing-for-wp', EFWP_SELF_VERSION );
+    return $admin->orders_queue();
 }
 
 // add_filter( 'wp_default_editor', 'force_default_editor' );
@@ -163,14 +170,54 @@ function efwp_process_subscription() {
 function process_egoi_simple_form( $atts ) {
 	global $post;
 	$public_area = new Egoi_For_Wp_Public();
+        // Validation of required fields with JavaScript
+		if(!isset($_POST['save'])){
+		?>
+			<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				// Select all forms whose ID starts with "egoi_simple_form"
+				var forms = document.querySelectorAll('form[id^="egoi_simple_form"]');
+				
+				forms.forEach(function(form) {
+					form.dataset.listenerAdded = 'true';
+					if(!form.dataset.listenerAdded){
+							form.addEventListener('submit', function(event) {
+								var currentForm = this;
+								var fields = currentForm.querySelectorAll('input, select, textarea');
+								var isValid = true;
+			
+								fields.forEach(function(field) {
+									var label = currentForm.querySelector('label[for="' + field.id + '"]');
+			
+									if (label && label.textContent.includes('*')) {
+										if (field.value.trim() === '') {
+											isValid = false;
+											label.style.color = 'red'; // Highlight label in red if the field is empty
+										} else {
+											label.style.color = ''; // Remove highlight if filled correctly
+										}
+									}
+								});
+			
+								if (!isValid) {
+									event.preventDefault();
+									alert('<?php _e( 'Please fill out all required fields(*).', 'egoi-for-wp' ); ?>');
+								}
+							});
+						}
+				});
+			});
+			</script>
+		<?php
+		}
 
 	if(isset($post)){
+
 		$qt   = (int) get_option( 'egoi_simple_form_post_increment_' . $post->ID );
 		$size = (int) get_option( 'egoi_simple_form_post_' . $post->ID );
-	
 		if ( ! isset( $qt ) && isset( $size ) ) {
 			$qt = add_option( 'egoi_simple_form_post_increment_' . $post->ID, 1, 'no' );
-			return $public_area->subscribe_egoi_simple_form( $atts, $qt );
+			return $public_area->subscribe_egoi_simple_form( $atts, $qt);
 		} elseif ( isset( $qt ) && isset( $size ) && $qt <= $size ) {
 			if ( $qt == $size ) {
 				update_option( 'egoi_simple_form_post_increment_' . $post->ID, 1, 'no' );
@@ -179,7 +226,7 @@ function process_egoi_simple_form( $atts ) {
 			}
 			return $public_area->subscribe_egoi_simple_form( $atts, $qt );
 		} else {
-			return $public_area->subscribe_egoi_simple_form( $atts );
+			return $public_area->subscribe_egoi_simple_form( $atts, 1);
 		}
 	}
 }
@@ -189,8 +236,10 @@ add_action( 'save_post', 'efwp_process_content_page', 10, 3 );
 function efwp_process_content_page( $post_id, $post, $update ) {
 
 	preg_match_all( '/\[egoi-simple-form .*=".*"\]/', $post->post_content, $matches );
-	if ( $update && ! empty( $matches ) ) {
-        update_option( 'egoi_simple_form_post_' . sanitize_key($post_id), count($matches[0]) );
+	if ( $update && ! empty( $matches ) ) {	
+		update_option( 'egoi_simple_form_post_' . sanitize_key($post_id), count($matches[0]) );
+        //    undefined usage, removed until proved otherwise
+        //    $_POST = array("save" => 1);
 	}
 
 }

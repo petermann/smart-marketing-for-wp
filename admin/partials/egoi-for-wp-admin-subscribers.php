@@ -46,14 +46,37 @@ if ( $this->options_list['list'] ) {
 	}
 }
 
-if ( class_exists( 'Woocommerce' ) ) {
-	$wc = new WC_Admin_Profile();
-	foreach ( $wc->get_customer_meta_fields() as $key => $value ) {
-		foreach ( $value['fields'] as $key_value => $label ) {
-			$wp_fields[ $key_value ] = $label['label'];
-		}
-	}
+$wp_fields = array();
+
+if ( class_exists( 'WooCommerce' ) && class_exists( 'WC_Admin_Profile' ) ) {
+    $wc     = new WC_Admin_Profile();
+    $fields = $wc->get_customer_meta_fields();
+
+    if ( is_array( $fields ) ) {
+        foreach ( $fields as $section ) {
+            if ( isset( $section['fields'] ) && is_array( $section['fields'] ) ) {
+                foreach ( $section['fields'] as $key => $field ) {
+                    if ( isset( $field['label'] ) ) {
+                        $wp_fields[ $key ] = $field['label'];
+                    }
+                }
+            }
+        }
+    }
 }
+
+
+$orders       = array();
+$count_orders = 0;
+
+if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_get_orders' ) ) {
+    $orders = wc_get_orders( array( 'limit' => -1 ) );
+
+    if ( is_array( $orders ) ) {
+        $count_orders = count( $orders );
+    }
+}
+
 
 $count_users = count_users();
 ?>
@@ -105,6 +128,22 @@ jQuery(document).ready(function($) {
 			}, 5000);
 		});
 	});
+
+    $('#update_orders').click(function() {
+        $('#e-goi_import_orders_valid').hide();
+        $('#load_orders').show();
+
+        var data = {
+            action: 'efwp_add_orders',
+            listID: listID,
+            submit: 1
+        };
+
+        jQuery.post(ajaxurl, data, function(response) {
+            $('#load_orders').hide();
+            $('#e-goi_import_orders_valid').show();
+        });
+    });
 
 	$('#wpfooter').hide();
 

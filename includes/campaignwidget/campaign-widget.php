@@ -104,14 +104,9 @@ class CampaignWidget {
 		$webpush_campaign_widget_custom_content          = get_post_meta( $post->ID, 'webpush_campaign_widget_custom_content', true );
 		$webpush_campaign_widget_custom_heading          = get_post_meta( $post->ID, 'webpush_campaign_widget_custom_heading', true );
 
-		$webpushsite  = get_option( 'egoi_webpush_code' );
         $options = get_option( 'egoi_sync' );
 		$webpush_info = array();
-		if ( isset( $webpushsite ) ) {
-			$webpush_info = $this->get_webpush_info( $webpushsite, $lists );
-		}
         if(!empty($options['domain'])){
-
             $webpush_info = $this->get_webpush_info_from_cs( $options['domain'], $options['list'] );
             if(empty($webpush_info)){
                 unset($webpush_info);
@@ -213,7 +208,79 @@ class CampaignWidget {
 					</select>
 					</label>
 				</div>         
-			</div>          
+			</div>
+
+            <!-- Web Push Campaign -->
+            <div>
+                <div style="padding-bottom:10px; padding-top:10px;">
+                    <label style="font-size: 14px;font-weight: bold;"><?php _e( 'WebPush Campaign', 'egoi-for-wp' ); ?></label>
+                </div>
+
+                <?php if ( ! empty( $webpush_info ) ) { ?>
+
+                    <div id="div_webpush_campaign_widget">
+                        <label>
+                            <input type="checkbox" id="webpush_campaign_widget" name="webpush_campaign_widget" value="true"
+                                <?php
+                                if ( $webpush_campaign_widget_checked ) {
+                                    echo 'checked';
+                                }
+                                ?>
+                            ></input>
+
+                            <?php
+                            if ( $post->post_status === 'publish' ) {
+                                echo _e( 'Send Webpush Campaign on update', 'egoi-for-wp' );
+                            } else {
+                                echo _e( 'Send Webpush Campaign on publish', 'egoi-for-wp' );
+
+                            }
+                            ?>
+                        </label>
+                    </div>
+
+                    <div id="webpush_campaign_widget_preferences">
+                        <input type="checkbox" id="webpush_campaign_widget_modify_content" value="true" name="webpush_campaign_widget_modify_content"
+                            <?php
+                            if ( $webpush_campaign_widget_custom_contents_checked ) {
+                                echo 'checked';
+                            }
+                            ?>
+                        ></input> <?php _e( 'Customize Webpush Campaign content', 'egoi-for-wp' ); ?></label>
+
+                        <div id="webpush_campaign_widget_custom_contents" style="display:none;padding-top:10px;">
+                            <div>
+                                <label><?php _e( 'Campaign Title', 'egoi-for-wp' ); ?><br/>
+                                    <input type="text" size="16"  name="webpush_campaign_widget_custom_heading" value="
+                                    <?php
+                                    echo esc_attr( $webpush_campaign_widget_custom_heading );
+                                    ?>
+                                    " id="webpush_campaign_widget_custom_heading" placeholder="<?php _e( 'Campaign Title', 'egoi-for-wp' ); ?>"></input>
+                                </label>
+                            </div>
+                            <div>
+                                <label><?php _e( 'Campaign Subject', 'egoi-for-wp' ); ?><br/>
+                                    <input type="text" size="16"  name="webpush_campaign_widget_custom_content" value="
+                                    <?php
+                                    echo esc_attr( $webpush_campaign_widget_custom_content );
+                                    ?>
+                                    " id="webpush_campaign_widget_custom_content" placeholder="<?php _e( 'The Post\'s Current Title', 'egoi-for-wp' ); ?>"></input>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                <?php } else { ?>
+                    <div id="webpush_campaing_widget_link">
+                        <p>
+                            <a class="webpush_campaign_external_link" href="https://bo.egoiapp.com/#/messages/broadcasts/list?channel=webPush" target="_blank" >
+                                <?php _e( 'Create Webpush here so you can send the Webpush Campaign.', 'egoi-for-wp' ); ?>
+                            </a>
+                        </p>
+                    </div>
+
+                <?php } ?>
+            </div>
 
 		<?php
 	}
@@ -411,13 +478,17 @@ class CampaignWidget {
 	 */
 	public function create_webpush_campaign( $post ) {
 
+        /*get webpush info*/
+        $options = get_option( 'egoi_sync' );
+        $webpush_info = $this->get_webpush_info_from_cs( $options['domain'], $options['list'] );
+
 		/* Returns true if there is POST data */
 		$was_posted = ! empty( $_POST );
 
 		$webpush_campaign_widget_site_info = sanitize_text_field( $_POST['webpush_campaign_widget_site_info'] );
 
 		/* Check if the checkbox "Customize notification content" is selected */
-		$webpush_campaign_widget_modify_content_checked = $was_posted && array_key_exists( 'webpush_campaign_widget_modify_content', $_POST ) && $_POST['email_campaign_widget_modify_content'] == 'true';
+		$webpush_campaign_widget_modify_content_checked = $was_posted && array_key_exists( 'webpush_campaign_widget_modify_content', $_POST ) == 'true';
 
 		// If this post is newly being created and if the user has chosen to customize the content
 		$webpush_campaign_widget_modify_content = $webpush_campaign_widget_modify_content_checked || ( get_post_meta( $post->ID, 'webpush_campaign_widget_modify_content', true ) === '1' );
@@ -447,7 +518,7 @@ class CampaignWidget {
 		$link = home_url() . '/?page_id=' . $post->ID;
 
 		$body = array(
-			'site_id'       => $webpush_campaign_widget_site_info,
+			'site_id'       => $webpush_info['site_id'],
 			'internal_name' => $title,
 			'content'       => array(
 				'title'   => $title,
@@ -475,7 +546,7 @@ class CampaignWidget {
 			);
 		} else {
 			$data = array(
-				'site_id' => $webpush_campaign_widget_site_info,
+				'site_id' => $webpush_info['site_id'],
 				'hash'    => $campaign_hash,
 			);
 
@@ -640,38 +711,6 @@ class CampaignWidget {
         $api     = new EgoiApiV3( $apikey );
         return $api->getWebpushSiteIdFromCS($domain, $list);
     }
-
-	public function get_webpush_info( $webpushsite, $lists ) {
-		$webpush_info = array();
-
-		// get all websites - make request API v3
-		$apikey  = $this->getApikey();
-		$api     = new EgoiApiV3( $apikey );
-		$w_sites = json_decode( $api->getWebPushSites() );
-
-		if ( ! isset( $w_sites->status ) ) {
-
-			foreach ( $w_sites as $w_site ) {
-				if ( $w_site->app_code == $webpushsite['code'] ) {
-					$webpush_info['site_id'] = $w_site->site_id;
-					$webpush_info['site']    = $w_site->site;
-					$webpush_info['list_id'] = $w_site->list_id;
-				}
-			}
-		}
-
-		if ( ! empty( $webpush_info ) ) {
-			foreach ( $lists as $list ) {
-				if ( $list['list_id'] == $webpush_info['list_id'] ) {
-					$webpush_info['list'] = $list['public_name'];
-
-					return $webpush_info;
-				}
-			}
-		}
-
-		return;
-	}
 
 	public function was_post_restored_from_trash( $old_status, $new_status ) {
 		return $old_status === 'trash' && $new_status === 'publish';
