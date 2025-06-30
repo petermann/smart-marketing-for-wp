@@ -1078,7 +1078,7 @@ class EgoiApiV3 {
 	public function getTag( $name ) {
 		$tags = json_decode( $this->getTags() );
 
-		if ( isset( $tags['status'] ) || isset( $tags['error'] ) ) {
+		if ( isset( $tags->status ) || isset( $tags->error ) ) {
 			return $tags;
 		} else {
 			foreach ( $tags as $key => $value ) {
