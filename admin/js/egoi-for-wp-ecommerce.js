@@ -52,6 +52,7 @@ jQuery(document).ready(function() {
 
         var close_modal_catalog = $('#close_modal_catalog')
         var cancel_modal_catalog = $('#cancel_modal_catalog')
+        var close_import_modal = $('#close-import-modal')
 
         close_modal_catalog.on('click', function () {
             modal_delete.modal('hide');
@@ -59,6 +60,10 @@ jQuery(document).ready(function() {
 
         cancel_modal_catalog.on('click', function () {
             modal_delete.modal('hide');
+        });
+
+        close_import_modal.on('click', function () {
+            modal_import.modal('hide');
         });
 
         sync_catalog.change(function () {
@@ -80,6 +85,63 @@ jQuery(document).ready(function() {
                 console.log(('saved'))
             });
         })
+
+        // Related products toggle handler
+        $(document).on('change', '.related_products_catalog', function(e) {
+            e = $(e.target)
+            const catalogId = e.attr('idgoi');
+            const isChecked = e[0].checked;
+
+
+            // Enable/disable the corresponding dropdown
+            const dropdown = $('select.related_products_type_catalog[idgoi="' + catalogId + '"]');
+            if (isChecked) {
+                dropdown.prop('disabled', false);
+            } else {
+                dropdown.prop('disabled', true);
+            }
+
+            let data = {
+                security:       ajaxObj.ajax_nonce,
+                action:         'egoi_related_products_catalog',
+                catalog_id:     catalogId,
+                status:         isChecked ? 'true' : 'false'
+            };
+
+            $.post(ajaxObj.ajax_url, data, function(response) {
+
+                // When enabling, also save the default type
+                if (isChecked) {
+                    const defaultType = dropdown.val() || 'upsells';
+                    let typeData = {
+                        security:       ajaxObj.ajax_nonce,
+                        action:         'egoi_related_products_type_catalog',
+                        catalog_id:     catalogId,
+                        type:           defaultType
+                    };
+                    $.post(ajaxObj.ajax_url, typeData, function(response) {
+                    });
+                }
+            });
+        });
+
+        // Related products type dropdown handler
+        $(document).on('change', '.related_products_type_catalog', function(e) {
+            e = $(e.target)
+            const catalogId = e.attr('idgoi');
+            const type = e.val();
+
+            let data = {
+                security:       ajaxObj.ajax_nonce,
+                action:         'egoi_related_products_type_catalog',
+                catalog_id:     catalogId,
+                type:           type
+            };
+
+            $.post(ajaxObj.ajax_url, data, function(response) {
+                console.log('Related products type saved');
+            });
+        });
 
         verified_delete.on('click', function(){
             deleteCatalog(s_delete_catalog.val(),to_delete);
@@ -148,7 +210,7 @@ jQuery(document).ready(function() {
             loader_nr_prod.show();
             number_products.text('');
             left_products.text('');
-            $.get(ajaxObj.ajax_url, {action: 'egoi_count_products',catalog: id}, function(response) {
+            $.get(ajaxObj.ajax_url, {action: 'egoi_count_products',catalog: id, security: ajaxObj.ajax_nonce}, function(response) {
                 loader_nr_prod.hide();
                 response = parseResponse(response);
                 if(response === false)

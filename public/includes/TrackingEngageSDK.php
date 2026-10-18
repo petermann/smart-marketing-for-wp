@@ -135,7 +135,7 @@ class TrackingEngageSDK {
 			)
 		);
 		?>
-		<script type="application/ld+json" class="egoi-smart-marketing">
+		<script type="application/ld+json" class="egoi-smart-marketing ip-schema-fix">
 		<?php echo wp_json_encode($graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
 		</script>
 		<script>var egoi_product = { 'id':'<?php echo esc_attr($product->get_id()); ?>', 'client_id':'<?php echo esc_attr($this->client_id); ?>','name':'<?php echo esc_attr(addslashes( $product->get_name() )); ?>','price':'<?php echo esc_attr($price); ?>'};</script>
@@ -181,7 +181,7 @@ class TrackingEngageSDK {
 					"<?php echo esc_attr( ( $variation && ! empty( $cart_item['variation_id'] ) ) ? $cart_item['variation_id'] : $cart_item['product_id'] ); ?>",
 					"<?php echo esc_attr(str_replace( '"', '\\"', $cart_item['data']->get_title() )); ?>",
 					"",
-					<?php echo esc_attr(number_format( $cart_item['data']->get_price(), 2 )); ?>,
+					<?php echo esc_attr(number_format( (float) $cart_item['data']->get_price(), 2 )); ?>,
 					<?php echo esc_attr((int) $cart_item['quantity']); ?>
 				]);
 			</script>
@@ -195,7 +195,7 @@ class TrackingEngageSDK {
 
 		<script>
 			window._egoiaq.push(['trackEcommerceCartUpdate',
-				<?php echo esc_attr(number_format( WC()->cart->cart_contents_total, 2 )); ?>]);
+				<?php echo esc_attr(number_format( (float) WC()->cart->cart_contents_total, 2 )); ?>]);
 
 			window._egoiaq.push(['trackPageView']);
 		</script>
@@ -297,7 +297,7 @@ class TrackingEngageSDK {
 					"<?php echo esc_attr($item->get_product_id()); ?>",
 					"<?php echo esc_attr($item->get_name()); ?>",
 					"",
-					<?php echo esc_attr(number_format( $item->get_subtotal(), 2 )); ?>,
+					<?php echo esc_attr(number_format( (float) $item->get_subtotal(), 2 )); ?>,
 					<?php echo esc_attr((int) $item->get_quantity()); ?>
 				]);
 			</script>
@@ -310,11 +310,11 @@ class TrackingEngageSDK {
 			<script>
 				window._egoiaq.push(['trackEcommerceOrder',
 					"<?php echo esc_attr($order_id); ?>", // (required) Unique Order ID
-					<?php echo esc_attr(number_format( $order->get_total(), 2 )); ?>, // (required) Order Revenue grand total (includes tax, shipping, and subtracted discount)
-					<?php echo esc_attr(number_format( $order->get_subtotal(), 2 )); ?>, // (optional) Order sub total (excludes shipping)
-					<?php echo esc_attr(number_format( $order->get_total_tax(), 2 )); ?>, // (optional) Tax amount
-					<?php echo esc_attr(number_format( $order->get_shipping_total(), 2 )); ?>, // (optional) Shipping amount
-					<?php echo  esc_attr(! empty( $order->get_total_discount() ) ? number_format($order->get_total_discount(), 2):0); ?> // (optional) Discount offered (set to false for unspecified parameter)
+					<?php echo esc_attr(number_format( (float) $order->get_total(), 2 )); ?>, // (required) Order Revenue grand total (includes tax, shipping, and subtracted discount)
+					<?php echo esc_attr(number_format( (float) $order->get_subtotal(), 2 )); ?>, // (optional) Order sub total (excludes shipping)
+					<?php echo esc_attr(number_format( (float) $order->get_total_tax(), 2 )); ?>, // (optional) Tax amount
+					<?php echo esc_attr(number_format( (float) $order->get_shipping_total(), 2 )); ?>, // (optional) Shipping amount
+					<?php echo  esc_attr(! empty( $order->get_total_discount() ) ? number_format((float) $order->get_total_discount(), 2):0); ?> // (optional) Discount offered (set to false for unspecified parameter)
 				]);
 
 				window._egoiaq.push(['trackPageView']);

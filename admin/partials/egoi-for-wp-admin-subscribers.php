@@ -69,13 +69,10 @@ if ( class_exists( 'WooCommerce' ) && class_exists( 'WC_Admin_Profile' ) ) {
 $orders       = array();
 $count_orders = 0;
 
-if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_get_orders' ) ) {
-    $orders = wc_get_orders( array( 'limit' => -1 ) );
-
-    if ( is_array( $orders ) ) {
-        $count_orders = count( $orders );
-    }
+if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_orders_count' ) ) {
+	$count_orders = wc_orders_count( 'any' );
 }
+
 
 
 $count_users = count_users();
@@ -115,6 +112,7 @@ jQuery(document).ready(function($) {
 		$('#e-goi_import_valid').hide();
 		$('#load').show();
 		var data = {
+			security: egoi_config_ajax_object_core.ajax_nonce,
 			action: 'efwp_add_users',
 			listID: listID,
 			submit: 1
@@ -134,6 +132,7 @@ jQuery(document).ready(function($) {
         $('#load_orders').show();
 
         var data = {
+            security: egoi_config_ajax_object_core.ajax_nonce,
             action: 'efwp_add_orders',
             listID: listID,
             submit: 1

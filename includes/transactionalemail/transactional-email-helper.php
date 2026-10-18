@@ -273,22 +273,22 @@ class TransactionalEmailHelper {
 
 	public function handle_error( $response ) {
 
-		$body = $response['body'];
+		$body   = isset( $response['body'] ) ? $response['body'] : null;
+		$option = get_option( 'transactional_email_error_option' );
 
 		if ( isset( $body->detail ) ) {
-			$option = get_option( 'transactional_email_error_option' );
-			if ( ! $option['active'] ) {
-				$option['active'] = 1;
-				$option['detail'] = $body->detail;
-				update_option( 'transactional_email_error_option', $option );
-			}
+			$option['detail'] = $body->detail;
+		} elseif ( isset( $body->error ) ) {
+			$option['detail'] = $body->error;
 		} else {
-			if ( ! $option['active'] ) {
-				$option['active'] = 1;
-				$option['detail'] = $body->error;
-				update_option( 'transactional_email_error_option', $option );
-			}
+			$option['detail'] = __( 'Unknown error (no details returned by the API).', 'egoi-for-wp' );
 		}
+
+		$option['active'] = 1;
+		$option['code']   = isset( $response['response']['code'] ) ? $response['response']['code'] : '';
+		$option['time']   = current_time( 'mysql' );
+
+		update_option( 'transactional_email_error_option', $option );
 
 	}
 }

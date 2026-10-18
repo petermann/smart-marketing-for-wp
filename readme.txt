@@ -1,135 +1,188 @@
- === Smart Marketing SMS and Newsletters Forms ===
-Contributors: egoi
-Donate link:
-Tags: Email Marketing, Newsletter, Marketing Automation, E-goi, Ecommerce
+=== Smart Marketing SMS and Newsletters Forms ===
+Contributors: E-goi
+Donate link: https://www.e-goi.com
+Tags: Email Marketing, SMS Marketing, Newsletter, Marketing Automation, E-goi, Ecommerce
 Requires at least: 4.7
 Tested up to: 6.7.1
-Stable tag: 5.1.03
+Requires PHP: 5.6
+Stable tag: 5.1.29
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Save Time, Increase Traffic, and Transform Business Opportunities (Leads) into Trusted Customers!
+
+E-commerce Automation Engine: Product sync, Track & Engage, and abandoned cart recovery via Email and SMS for WooCommerce stores.
 
 == Description ==
 
-**Poupe Tempo, Aumente Tráfego e Transforme Oportunidades de Negócio (Leads) em Clientes Fiéis!**
+= 🇵🇹 VERSÃO EM PORTUGUÊS (PT-PT) =
 
-É muito fácil personalizar as cores, o botão e o tipo de letra do seu formulário e até pode posicioná-lo onde quiser!
+**E-goi Smart Marketing: O Motor de Crescimento All-in-One para o Seu WordPress!**
 
-Está disponível neste plugin a instalação no seu site, de forma muito simples, um sistema de Web Push para aumentar o alcance da sua comunicação e enviar mensagens que são realmente abertas no navegador dos seus clientes! E ainda pode escolher as categorias ou tags que quiser para personalizar os conteúdos ou produtos que quer enviar por email ou Web Push para os seus subscritores ou clientes!
+Cansado de ter contactos no seu site que nunca se transformam em vendas? O plugin **E-goi Smart Marketing SMS and Newsletters Forms** é o seu atalho para o sucesso, transformando o seu website **WordPress** ou loja **WooCommerce** numa máquina de marketing e automação integrada.
 
-**Usa Woocommerce?**
+**Venda mais, recupere vendas perdidas e automatize a sua comunicação, tudo a partir de um só lugar!**
 
-Então não deixe de ativar o Track & Engage, um sistema para rastrear todo o comportamento dos clientes no seu e-commerce que pode aproveitar para realizar campanhas em tempo real! (ex: carrinho abandonado, retargeting, up selling e cross selling, etc)
+= 💡 PORQUÊ INICIAR OU MUDAR PARA O E-GOI SMART MARKETING? =
 
-**Novidades**
-* E-goi E-mail Transacional (SMTP) - Envio todos os e-mails do seu WordPress pelo E-goi
+= 1. Captação Múltipla e Compatibilidade Total =
+
+Chega de widgets, pop-ups e shortcodes de diferentes ferramentas! Simplifique a sua gestão e capte contactos de forma eficaz, em qualquer canal:
+
+* **Captação:** Crie Pop-ups, Formulários Simples e Complexos, Widgets e Barra de Subscrição — tudo a partir de um único painel.
+* **Comunicação:** Use o Connected Sites para ligar o seu site a canais como Web Push, SMS e E-mail.
+* **Compatibilidade:** Garanta que os seus formulários e elementos de design funcionam com Elementor, Gutenberg, WPBakery Page Builder, Contact Form 7 e Gravity Forms.
+
+= 2. Integração Profunda com WooCommerce (Track & Engage) =
+
+O E-goi oferece uma integração de dados de compra profunda para automações que geram receita:
+
+* **Vendas Perdidas:** Ative o Track & Engage para monitorizar Carrinhos Abandonados e comportamento de navegação, permitindo automações de recuperação por E-mail e SMS.
+* **Visão 360º da Encomenda:** Sincronize Produtos e utilize o Converter Encomendas (API Backend) para registar no E-goi o estado exato de todas as compras.
+* **Conteúdo Automatizado:** Envie campanhas de e-mail sobre um produto automaticamente (requer WooCommerce).
+
+= 3. Entregabilidade Essencial com E-mail Transacional (SMTP) =
+
+O seu marketing é inútil se os e-mails não chegarem. Confie a sua reputação de remetente a quem sabe:
+
+* **Fim ao SPAM:** Utilize o E-mail Transacional (SMTP) do E-goi para processar todos os e-mails críticos do WordPress e WooCommerce.
+* **Relatórios:** Melhore a sua taxa de entregabilidade e aceda a relatórios detalhados de envios, aberturas e cliques.
+
+= 4. Automação Simples e Poderosa com RSS Feed =
+
+Mantenha a sua audiência a par das novidades, sem ter de criar e-mails manualmente todas as semanas:
+
+* **Feeds Personalizados:** Crie RSS Feeds por Categorias, Tags ou Tipo (Artigos/Produtos).
+* **Campanhas Automáticas:** Transforme esses Feeds em Campanhas RSS Feed automáticas.
+* **Conformidade:** Garanta a qualidade e a segurança dos seus dados com Double Opt-in (RGPD).
+
+**Novidades:**
+
+* **Conversão de Encomendas (API Backend):** Monitorização e sincronização dos estados de encomenda ("Criada", "Pendente", "Cancelada", "Completa" e "Desconhecida") diretamente com o E-goi.
 
 **Funcionalidades:**
-* 100% Gratuito
-* Sincronização automática de contactos
-* Connected Sites
-* Conversão de encomenda por estado
-* Formulários simples
-* Barra de subscrição
-* Formulários Pop-up
-* Formulários Widgets
-* Associação de Tags a formulários
-* Opção de validação dos contactos com Double Opt-in (RGPD)
-* Integração com o WooCommerce
-* Integração com o CF7
-* Integração com o WPBakery Page Builder
-* Integração com o Page Builder
-* Integração com o Gravity Forms
-* Mapeamento de campos adicionais (incl. WooCommerce)
-* E-goi Track & Engage
-* Notificações Web Push
-* RSS Feed por categorias, tags ou produtos.
-* Bloco E-goi para Gutenberg
-* Sincronização produtos Woocommerce
-* Integração com Elementor
-* Widget de formulários no Elementor
-* Criação de Popups - Visita e Exit Intent
 
-**Add-on**
+* **Geral:** 100% Gratuito, Sincronização automática de contactos, Connected Sites, E-goi Track & Engage, Bloco E-goi para Gutenberg.
+* **Captação de Leads:** Formulários Simples, Formulários Múltiplos, Barra de Subscrição, Formulários Pop-up, Formulários Widgets.
+* **Automação & E-commerce:** Conversão de encomenda por estado (API Backend), Campanha E-mail com publicação de artigo, Sincronização produtos Woocommerce.
+* **Canais & Conteúdo:** Notificações Web Push, RSS Feed por categorias, tags ou produtos.
+* **E-mail Transacional (SMTP) E-goi:** Envio de todos os e-mails do WordPress e WooCommerce pelo E-goi, com melhor entregabilidade.
+* **Compatibilidade:** Integração com WooCommerce, CF7, Gravity Forms, Elementor, WPBakery Page Builder.
+* **Conformidade:** Opção de validação dos contactos com Double Opt-in (RGPD), Associação de Tags a formulários.
 
-Plugin [WooCommerce SMS – Notificações Estados Encomendas](https://github.com/E-goi/sms-orders-alertnotifications-for-woocommerce/releases/download/1.5.4/sms-orders-alertnotifications-for-woocommerce-1.5.4.zip "SMS Orders Alert/Notifications for WooCommerce")
+**Add-on:**
 
-**Requisitos**
+Plugin [E-goi SMS Orders Alert/Notifications](https://wordpress.org/plugins/sms-orders-alertnotifications-for-woocommerce/ "SMS Orders Alert/Notifications for WooCommerce")
 
-Já tem uma conta E-goi? [Criar conta E-goi Gratuita](https://login.egoiapp.com/signup "Criar conta E-goi")
+**Requisitos:**
+
+* **Plano E-goi** com acesso a sua **API Key**.
+* WordPress na versão **4.7 ou superior**.
+
+Já tem uma conta E-goi? [Criar conta E-goi gratuita](https://login.egoiapp.com/signup "Criar conta E-goi")
 
 ---
 
-**Save Time, Increase Traffic, and Transform Business Opportunities (Leads) into Trusted Customers!**
+= 🇬🇧 ENGLISH VERSION (EN-EN) =
 
-It's very easy to customize the colors, the button and the fonts of your form and you can even position it where you want!
+**E-goi Smart Marketing: The All-in-One Growth Engine for Your WordPress!**
 
-It is available in this plugin to install on your website, very simply, a Web Push system to increase the reach of your communication and send messages that are really open in your customers browser! And you can even choose the categories, tags or products you want to customize the content and send it by email or Web Push to your subscribers or customers!
+Tired of having contacts on your site that never turn into sales? The **E-goi Smart Marketing SMS and Newsletters Forms** plugin is your shortcut to success, transforming your **WordPress** website or **WooCommerce** store into an integrated marketing and automation machine.
 
-**Use Woocommerce?**
+**Sell more, recover lost sales, and automate your communication, all from one place!**
 
-So be sure to enable Track & Engage system to track all customer behavior in your e-commerce and then take the advantage of run real-time campaigns! (ex: abandoned cart, retargeting, up selling and cross selling, etc)
+**WHY SWITCH TO E-GOI SMART MARKETING?**
 
-100% adjustable forms subscription Plugin, Widget, Popup with multiple configurations, Contact Form 7, integrates with E-goi system: Newsletters, SMS and all kinds of automation for e-commerce and bloggers.
+= 1. MULTIPLE LEAD CAPTURE AND FULL COMPATIBILITY =
 
-**News**
-* E-goi E-mail Transactional (SMTP) -  Send all WordPress' e-mail with E-goi
+No more widgets, pop-ups, and shortcodes from different tools! Simplify your management and capture contacts effectively, across any channel:
 
-**What you get**
-* 100% Free
-* WP/E-goi contact sync-up
-* Connected Sites
-* Order sync by status
-* Quick sign-up bar
-* Full sign-up bar customisation
-* Comments sign-up option
-* E-goi list management
-* Integrates with Contact Form 7
-* Integrates with WooCommerce
-* Integrates with Page Builder By SiteOrigin
-* Integrates with WPBakery Page Builder
-* Integrates with Gravity Forms
-* Multiple types of Custom Forms
-* Easy E-goi/WP field mapping; send anything over to E-goi!
-* Web Push Notifications
-* RSS Feed
-* Gutenberg E-goi Block
-* Woocommerce product synchronization
-* Elementor Integration
-* Elementor's Form Widget
-* Popup builder - Visit and Exit Intent
+* Multiple Capture: Create Pop-ups, Simple and Complex Forms, Widgets, and Subscription Bar — all from a single panel.
+* Immediate Communication: Use Connected Sites to link your site to multiple E-goi channels, such as Web Push, SMS, and E-mail, re-engaging visitors wherever they are.
+* Full Compatibility: Ensure your forms and design elements work with Elementor, Gutenberg, WPBakery Page Builder, Contact Form 7, and Gravity Forms.
 
-**Add-on**
+= 2. DEEP WOOCOMMERCE INTEGRATION (TRACK & ENGAGE) =
 
-[SMS Orders Alert/Notifications for WooCommerce plugin.](https://github.com/E-goi/sms-orders-alertnotifications-for-woocommerce/releases/download/1.5.4/sms-orders-alertnotifications-for-woocommerce-1.5.4.zip "SMS Orders Alert/Notifications for WooCommerce")
+Go beyond the basics. E-goi offers deep purchase data integration for automations that generate revenue:
 
-**Requirements**
+* Lost Sales Automation: Activate Track & Engage to monitor Abandoned Carts and real-time browsing behavior, enabling recovery automations via E-mail and SMS.
+* 360º Order View: Synchronize Products and use the Order Conversion (API Backend) to record the exact status of all purchases in E-goi ("Created", "Pending", "Canceled", "Completed" or "Unknown"), allowing for highly segmented post-purchase automations.
+* Automated Content: Send e-mail campaigns about a product automatically as soon as you publish a new article (requires WooCommerce).
+
+= 3. ESSENTIAL DELIVERABILITY WITH TRANSACTIONAL E-MAIL (SMTP) =
+
+Your marketing is useless if the emails don't arrive. Trust your sender reputation to the experts:
+
+* End SPAM: Use E-goi's Transactional E-mail (SMTP) to process all critical emails from WordPress and WooCommerce (password recovery, order confirmations).
+* Reports and Trust: Improve your deliverability rate and access detailed reports on sends, opens, and clicks to track transactional performance.
+
+= 4. SIMPLE AND POWERFUL AUTOMATION WITH RSS FEED =
+
+Keep your audience up-to-date with news without having to manually create emails every week:
+
+* Custom Feeds: Create RSS Feeds by Categories, Tags, or Type (Articles/Products).
+* Automatic Campaigns: Transform these Feeds into automatic RSS Feed Campaigns that are sent to your subscribers on a schedule without intervention.
+* Compliance: Ensure the quality and security of your data with the option for contact validation via Double Opt-in (GDPR).
+
+**What's new:**
+
+* **Order Conversion (API Backend):** Monitoring and synchronization of order statuses ("Created", "Pending", "Canceled", "Completed" or "Unknown") directly with E-goi.
+
+**Features:**
+
+* **Geral:** 100% Free, Automatic contact synchronization (incl. custom fields), Connected Sites, E-goi Track & Engage, Gutenberg E-goi Block.
+* **Lead Capture:** Simple Forms, Multiple Forms (via Connected Sites), Subscription Bar, Pop-up Forms (Visit and Exit Intent), Widget Forms.
+* **Automation & E-commerce:** Order sync by status (API Backend), E-mail campaign on article publication, WooCommerce product synchronization.
+* **Channels & Content:** Web Push Notifications, RSS Feed by categories, tags or products.
+* **E-goi Transactional E-mail (SMTP):** Send all WordPress and WooCommerce e-mails through E-goi for better deliverability.
+* **Compatibility:** Integrates with WooCommerce, CF7, Gravity Forms, Elementor, WPBakery Page Builder.
+* **Compliance:** Double Opt-in contact validation (GDPR), Tag association to forms.
+
+**Add-on:**
+
+[E-goi SMS Orders Alert/Notifications](https://wordpress.org/plugins/sms-orders-alertnotifications-for-woocommerce/ "SMS Orders Alert/Notifications for WooCommerce")
+
+**Requirements:**
+
+* **E-goi Plan** with access to your **API Key**.
+* WordPress version **4.7 or higher**.
 
 Do you need an E-goi account ? [Click and create a free E-goi account](https://login.egoiapp.com/signup "Create E-goi account")
-
-= User Guide WordPress and WooCommerce =
-
-[WordPress User Guide](https://helpdesk.e-goi.com/242267-Integrating-E-goi-with-WordPress "WordPress User Guide")
-[WooCommerce User Guide](https://helpdesk.e-goi.com/706964-Integrating-E-goi-with-WooCommerce "WooCommerce User Guide")
-
-= Manual de instruções WordPress e WooCommerce =
-
-[Manual de Instruções WordPress](https://helpdesk.e-goi.com/835325-Integrar-o-E-goi-com-o-WordPress "Manual de Instruções WordPress")
-[Manual de Instruções WooCommerce](https://helpdesk.e-goi.com/131325-Integrar-o-E-goi-com-o-WooCommerce "Manual de Instruções WooCommerce")
-
-= Manual de Instrucciones WordPress y WooCommerce =
-
-[Manual de Instrucciones WordPress](https://helpdesk.e-goi.com/685499-Integrar-E-goi-con-WordPress "Manual de Instrucciones WordPress")
-[Manual de Instrucciones WooCommerce](https://helpdesk.e-goi.com/632398-Integrar-E-goi-con-WooCommerce "Manual de Instrucciones WooCommerce")
 
 
 == Installation ==
 
-Download and install Smart Marketing for WP using the built in Wordpress plugin installer. To install the plugin manually, simply upload it to "/wp-content/plugins/" folder.
+= 🇵🇹 VERSÃO EM PORTUGUÊS (PT-PT) =
 
-To start using the plugin activate it in the "Plugins" admin panel by clicking on the "Activate" link.
+1. Descarregar o plugin.
+2. Instalar o plugin no WordPress.
+3. Activar o plugin.
+4. Aceder ao plugin para realizar a configuração inicial e seguir os passos apresentados.
 
-Now the plugin is ready to be configured and waiting for your users newsletter subscription.
+---
+
+= 🇬🇧 ENGLISH VERSION (EN-EN) =
+
+1. Download the plugin.
+2. Install the plugin in WordPress.
+3. Activate the plugin.
+4. Access the plugin to perform the initial configuration and follow the steps presented.
+
+---
+
+= 🇵🇹 Manuais WordPress e WooCommerce =
+
+[Manual de Instruções WordPress](https://helpdesk.e-goi.com/835325-Integrar-o-E-goi-com-o-WordPress "Manual de Instruções WordPress")  
+[Manual de Instruções WooCommerce](https://helpdesk.e-goi.com/131325-Integrar-o-E-goi-com-o-WooCommerce "Manual de Instruções WooCommerce")
+
+= 🇬🇧 User Guides (WordPress and WooCommerce) =
+
+[WordPress User Guide](https://helpdesk.e-goi.com/242267-Integrating-E-goi-with-WordPress "WordPress User Guide")  
+[WooCommerce User Guide](https://helpdesk.e-goi.com/706964-Integrating-E-goi-with-WooCommerce "WooCommerce User Guide")
+
+= 🇪🇸 Manuales de Instrucciones (WordPress y WooCommerce) =
+
+[Manual de Instrucciones WordPress](https://helpdesk.e-goi.com/685499-Integrar-E-goi-con-WordPress "Manual de Instrucciones WordPress")  
+[Manual de Instrucciones WooCommerce](https://helpdesk.e-goi.com/632398-Integrar-E-goi-con-WooCommerce "Manual de Instrucciones WooCommerce")
+
 
 == Frequently Asked Questions ==
 
@@ -154,21 +207,89 @@ Yes, just activate it in the Settings page.
 = Can I manage my E-goi lists with this plugin? =
 You can create and update your lists, see how many subscribers you have, but you can not delete them.
 
-== Screenshots ==
-
-1 - Dashboard 
-2 - Captura de contactos
-3 - Formulários
-4 - Setup e Sync de Contactos
-5 - Ecommerce, gestão de catálogos e sync de produtos
-6 - Track & Engage
-7 - Webpush
-8 - Integração com outros plugins
-9 - RSS Feed
-10 - Campanhas RSS e Webpush
-
 
 == Changelog ==
+
+= 5.1.29 =
+- Fix Elementor form submit resulting in a 404 (missing form id caused JS submit handler to not bind)
+
+= 5.1.28 =
+- Fix Elementor form security token being cached and shared across visitors on pages served from cache
+
+= 5.1.27 =
+- Minor fixes
+
+= 5.1.26 =
+- Show transacional erros on WP panel
+
+= 5.1.25 =
+- Add security
+
+= 5.1.24 =
+- Fix transactional mail helper
+
+= 5.1.23 =
+- Fix elementor forms
+
+= 5.1.22 =
+- Add security
+
+= 5.1.21 =
+- Retrofit plugin with old versions
+
+= 5.1.20 =
+- Fixed bug related to cellphone field on contact forms.
+
+= 5.1.19 =
+- Change to use WP default checkbox system.
+
+= 5.1.18 =
+- Add system journeys (price drop)
+- Add security
+
+= 5.1.17 =
+- Add security
+
+= 5.1.16 =
+- Add system journeys (back in stock)
+
+= 5.1.15 =
+- Fixed issue where products were not being imported to the catalog.
+
+= 5.1.14 =
+- Changed where variables are fetched to avoid conflicts with other plugins using the same hook.
+
+= 5.1.13 =
+- Patch version - bug fix
+
+= 5.1.12 =
+- Allow mapping of newsletter field
+
+= 5.1.11 =
+- Fix attach tag
+
+= 5.1.10 =
+- Fix getting tag to apply
+
+= 5.1.09 =
+- Add system journeys (abandoned cart)
+
+= 5.1.08 =
+- Add support to in_stock variable to API V3
+
+= 5.1.07 =
+- Add filter to get all extra fields without list fields
+- Migrate Dasboard to API V3
+
+= 5.1.06 =
+- Fixed an issue causing incorrect behavior in certain checkout scenarios.
+
+= 5.1.05 =
+- Update Onboarding to create catalog with related products option
+
+= 5.1.04 =
+- Add related products to synchronization
+
 = 5.1.03 =
 - Fix the behaviour of the newletter option in the Post Comment section
 - Add new Validation for warning in contact forms
@@ -284,16 +405,16 @@ You can create and update your lists, see how many subscribers you have, but you
 - Added Kwanza to catalogs currency
 - Minor Fix for Elementor that sometimes didn't load
 
-= 4.1.1 = 
+= 4.1.1 =
 - Fix TE abandoned cart issue
 
-= 4.1.0 = 
+= 4.1.0 =
 - Tax rate on catalog sync
 
-= 4.0.9 = 
+= 4.0.9 =
 - Improved performance issues
 
-= 4.0.8 = 
+= 4.0.8 =
 - Fix warning errors
 
 = 4.0.7 =
@@ -469,7 +590,7 @@ You can create and update your lists, see how many subscribers you have, but you
 - Facebook & Google Pixel
 
 = 3.1.5 =
-- Subscriber Checkbox Position Option added
+- Subscriber Checkbox Position option added
 
 = 3.1.4 =
 - Minor tag bug fixes
@@ -579,162 +700,161 @@ You can create and update your lists, see how many subscribers you have, but you
 - Add PT-BR translations
 
 = 2.3.3 =
- - RSS Feed - Fixed compatibility with other plugins
+- RSS Feed - Fixed compatibility with other plugins
 
 = 2.3.2 =
- - Web Push - Fixed compatibility with Elementor Page Builder and WPBakery Page Builder
+- Web Push - Fixed compatibility with Elementor Page Builder and WPBakery Page Builder
 
 = 2.3.1 =
- - RSS Feed - Improvements
+- RSS Feed - Improvements
 
 = 2.3.0 =
- - RSS Feed - Create RSS feeds with your WordPress Posts or Products
+- RSS Feed - Create RSS feeds with your WordPress Posts or Products
 
 = 2.2.3 =
- - Minor bug fixes in Simple Forms
+- Minor bug fixes in Simple Forms
 
 = 2.2.2 =
- - Minor bug fixes
+- Minor bug fixes
 
 = 2.2.1 =
- - Minor bug fixes
+- Minor bug fixes
 
 = 2.2.0 =
- - Integration with E-goi Web Push
- - Enable Double Opt-In option on subscriber forms
- - Simple form minor bug fixes
+- Integration with E-goi Web Push
+- Enable Double Opt-In option on subscriber forms
+- Simple form minor bug fixes
 
 = 2.1.4 =
- - Show the language when is selected on widget
- - Fixed compatibility with the_widget function
+- Show the language when is selected on widget
+- Fixed compatibility with the_widget function
 
 = 2.1.3 =
- - Fixed subscriber email when is guest in Process Order
+- Fixed subscriber email when is guest in Process Order
 
 = 2.1.2 =
- - Fixed the removal of simple forms in the deactivation of the plugin
- - Widgets improvements
- - Fixed compatibility with Yith Woocommerce Composite Products
+- Fixed the removal of simple forms in the deactivation of the plugin
+- Widgets improvements
+- Fixed compatibility with Yith Woocommerce Composite Products
 
 = 2.1.1 =
- - Minor Translations changes
- - Minor Bug Fixes
+- Minor Translations changes
+- Minor Bug Fixes
 
 = 2.1.0 =
- - Simple Forms - option to choose a list, a language and a tag that the subscribers will be associated
- - Subscriber Bar - option to choose a list, a language and a tag that the subscribers will be associated
- - Widget - option to choose a list, a language and a tag that the subscribers will be associated
+- Simple Forms - option to choose a list, a language and a tag that the subscribers will be associated
+- Subscriber Bar - option to choose a list, a language and a tag that the subscribers will be associated
+- Widget - option to choose a list, a language and a tag that the subscribers will be associated
 
 = 2.0.7 =
- - Products endpoint improvements
- - Minor Bug Fixes
+- Products endpoint improvements
 
 = 2.0.6 =
- - Minor Translations changes
+- Minor Translations changes
 
 = 2.0.5 =
- - Minor Bug Fixes
+- Minor Bug Fixes
 
 = 2.0.4 =
- - Simple Form improvements
+- Simple Form improvements
 
 = 2.0.3 =
- - Products endpoint improvements
+- Products endpoint improvements
 
 = 2.0.2 =
- - Products endpoint improvements
+- Products endpoint improvements
 
 = 2.0.1 =
- - Minor Bug Fixes
+- Minor Bug Fixes
 
 = 2.0.0 =
- - Track&Engage - Improvements and corrections
- - Fix security failure (XSS)
- - Fix error in RSS pages
- - Fix the error when changing the form type in the advanced form
- - Simple Forms - creating a simple form that generates a shortcode
- - JSON Endpoint - This endpoint returns the produts info in a JSON
- - Integration with WPBakery Page Builder
- - Integration with Page Builder By SiteOrigin  
+- Track&Engage - Improvements and corrections
+- Fix security failure (XSS)
+- Fix error in RSS pages
+- Fix the error when changing the form type in the advanced form
+- Simple Forms - creating a simple form that generates a shortcode
+- JSON Endpoint - This endpoint returns the produts info in a JSON
+- Integration with WPBakery Page Builder
+- Integration with Page Builder By SiteOrigin  
 
 = 1.1.1 =
- - Minify Admin/Public JS files
+- Minify Admin/Public JS files
 
 = 1.1.0 =
- - Menus updated
- - Design refactored
- - Translations updated
- - New Page Added - Ecommerce
- - E-goi Forms Refectored
- - Subscriber Bar Improvements
- - Minor Bug Fixes
+- Menus updated
+- Design refactored
+- Translations updated
+- New Page Added - Ecommerce
+- E-goi Forms Refectored
+- Subscriber Bar Improvements
+- Minor Bug Fixes
 
 = 1.0.16 =
- - Track&Engage - Improvements
- - Widgets Corrections & Improvements
- - Translations Updated
- - Subscription Forms Improvements
- - Subscriber Bar Improvements
+- Track&Engage - Improvements
+- Widgets Corrections & Improvements
+- Translations Updated
+- Subscription Forms Improvements
+- Subscriber Bar Improvements
 
 = 1.0.15 =
- - ContactForm7 - Improvements and new fields ready to map
+- ContactForm7 - Improvements and new fields ready to map
 
 = 1.0.14 =
- - ContactForm7 - Improvements
- - ContactForm7 - Update Subscriber Improved
+- ContactForm7 - Improvements
+- ContactForm7 - Update Subscriber Improved
 
 = 1.0.13 =
- - Integrations Improvements - area now hidden when integration is off
- - ContactForm7 Integration Improvements
- - Manual Sincronization for E-goi Users with Wordpress Optimized
- - Map Custom Fields Improvements
- - Widgets Improvements
- - Translations Updated
- - Minor Bug Fixes
+- Integrations Improvements - area now hidden when integration is off
+- ContactForm7 Integration Improvements
+- Manual Sincronization for E-goi Users with Wordpress Optimized
+- Map Custom Fields Improvements
+- Widgets Improvements
+- Translations Updated
+- Minor Bug Fixes
 
 = 1.0.12 =
- - ContactForm7 Integration Improvements
+- ContactForm7 Integration Improvements
 
 = 1.0.11 =
- - Widgets Improvements
+- Widgets Improvements
 
 = 1.0.10 =
- - WooCommerce Integration Improvements
+- WooCommerce Integration Improvements
 
 = 1.0.9 =
- - Subscriber Bar responsiveness improvements
- - Sincronization of E-goi Users with Wordpress Optimized
- - Newsletter subscription checkbox on Guest Checkout (WooCommerce)
- - Translations Updated
- - Minor Bug Fixes
+- Subscriber Bar responsiveness improvements
+- Sincronization of E-goi Users with Wordpress Optimized
+- Newsletter subscription checkbox on Guest Checkout (WooCommerce)
+- Translations Updated
+- Minor Bug Fixes
 
 = 1.0.8 =
- - ContactForm7 Integration improvements
- - Minor Bug Fixes
+- ContactForm7 Integration improvements
+- Minor Bug Fixes
 
 = 1.0.7 =
- - Translations Updated
- - Widgets Improvements
+- Translations Updated
+- Widgets Improvements
 
 = 1.0.6 =
- - Translations Updated
- - Correction of forms status in FrontOffice
- - Improvements
+- Translations Updated
+- Correction of forms status in FrontOffice
+- Improvements
 
 = 1.0.5 =
- - Improvements
+- Improvements
 
 = 1.0.4 =
- - Translations - new strings added and fixed
+- Translations - new strings added and fixed
 
 = 1.0.3 =
- - Minor Bug Fixes
+- Minor Bug Fixes
 
 = 1.0.2 =
- - Translations: is now translated to pt-PT and es-ES
+- Translations: is now translated to pt-PT and es-ES
 
 = 1.0.1 =
- - Contact Form 7: is now possible to add extra fields to integrate with E-goi
+- Contact Form 7: is now possible to add extra fields to integrate with E-goi
 
 = 1.0.0 =
- - First Version to be released.
+- First Version to be released.

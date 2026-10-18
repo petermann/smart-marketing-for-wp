@@ -275,8 +275,12 @@ class EgoiApiV3 {
 		'convertCart'              => '/{domain}/carts',
 		'importContactsBulk'       => '/lists/{list_id}/contacts/actions/import-bulk',
 		'ping'					   => '/ping',
-        'getClient'             => '/my-account',
-        'importOrdersBulk'         => '/lists/{list_id}/orders'
+        'getClient'                => '/my-account',
+        'importOrdersBulk'         => '/lists/{list_id}/orders',
+        'getCampaigns'             => '/campaigns',
+        'getReports'               => '/reports/{channel}/{campaign_hash}',
+		'getAutomationsSystem'	   => '/automations/system',
+		'updateAutomationsSystem'  => '/automations/system'
     );
 
 	protected $apiKey;
@@ -639,6 +643,68 @@ class EgoiApiV3 {
 		}
 
 	}
+
+    /**
+     * @return false|string
+     */
+    public function getCampaigns() {
+
+        $url = self::APIV3 . self::APIURLS[ __FUNCTION__ ];
+
+        $client = new ClientHttp(
+            $url,
+            'GET',
+            $this->headers
+        );
+
+        if ( $client->success() !== true ) {
+            return $this->processErrors( $client->getError() );
+        }
+
+        $resp = json_decode( $client->getResponse(), true );
+
+        if($client->getCode() == 200 && isset( $resp['items'] )){
+            $return = $resp['items'];
+            return $return;
+        } else {
+            return $this->processErrors( $client->getResponse() );
+        }
+
+    }
+
+    /**
+     * @param string $channel
+     * @param string $campaign_hash
+     * @return array|false|string
+     */
+    public function getReports(string $channel, string $campaign_hash): array
+    {
+        $path = self::APIV3 . $this->replaceUrl(
+                self::APIURLS[__FUNCTION__],
+                ['{channel}', '{campaign_hash}'],
+                [$channel, $campaign_hash]
+            );
+
+        $client = new ClientHttp(
+            $path,
+            'GET',
+            $this->headers
+        );
+
+        if ($client->getCode() !== 200) {
+            return $this->processErrors(
+                $client->getError() ?: $client->getResponse()
+            );
+        }
+
+        $resp = json_decode($client->getResponse(), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->processErrors('Invalid JSON response');
+        }
+
+        return $resp;
+    }
 
 	/**
 	 * @return false|string
@@ -1007,8 +1073,7 @@ class EgoiApiV3 {
 		curl_close($ch);
 
 		if($httpCode == 409 && $editContact == 'true'){
-			$contact_id = isset($resp['errors']['contacts'][0]) ? $resp['errors']['contacts'][0] : '';
-			return $this->editContact( $listID, $contact_id, $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
+			return  $this->editContact( $listID, $resp['errors']['contacts'][0], $name, $lname, $extra_fields, $option, $ref_fields, $status, $tags );
 		} elseif ( $httpCode == 201){
             if ( ! empty( $tags ) && isset( $resp['contact_id'] ) && $tags[0] !== "0" ) {
 				$this->attachTag( $listID, $resp['contact_id'], $tags );
@@ -1061,7 +1126,7 @@ class EgoiApiV3 {
 			// Get the HTTP status code
 			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-			if($httpCode != 200){
+			if($httpCode != 202){
 				return false;
 			}
 	  
@@ -1077,13 +1142,13 @@ class EgoiApiV3 {
 	 * If doesnt exists creates one tag
 	 */
 	public function getTag( $name ) {
-		$tags = json_decode( $this->getTags() );
+		$tags = json_decode( $this->getTags(), true );
 
-		if ( isset( $tags->status ) || isset( $tags->error ) ) {
+		if ( isset( $tags['status'] ) || isset( $tags['error'] ) ) {
 			return $tags;
 		} else {
 			foreach ( $tags as $key => $value ) {
-				if ( strcasecmp( $value->name, $name ) == 0 ) {
+				if ( strcasecmp( $value['name'], $name ) == 0 ) {
 					$data = $value;
 				}
 			}
@@ -1101,14 +1166,14 @@ class EgoiApiV3 {
 	 * If doesnt exists creates one tag
 	 */
 	public function getTagById( $id ) {
-		$tags = json_decode( $this->getTags() );
+		$tags = json_decode( $this->getTags(), true );
 
 		$data = array();
 		if ( isset( $tags['status'] ) || isset( $tags['error'] ) ) {
 			return $data;
 		} else {
 			foreach ( $tags as $key => $value ) {
-				if ( strcasecmp( $value->tag_id, $id ) == 0 ) {
+				if ( strcasecmp( $value['tag_id'], $id ) == 0 ) {
 					$data = $value;
 				}
 			}
@@ -1223,10 +1288,15 @@ class EgoiApiV3 {
 		$result_client = json_decode( $client->getResponse(), true );
 
 		$extra_fields = array();
+		if ( ! is_array( $result_client ) ) {
+			return $extra_fields;
+		}
+
 		foreach ( $result_client as $fields ) {
-			if ( ! isset( $fields['type'] ) || $fields['type'] != 'extra' ) {
-				continue;
-			}
+            if (isset($fields['format']) && $fields['format'] === 'options') {
+                continue;
+            }
+
 			if ( $fields['type'] == 'extra' && $type == 'id' ) {
 				array_push( $extra_fields, $fields['field_id'] );
 			} else if ( $fields['type'] == 'extra' ){
@@ -1270,10 +1340,10 @@ class EgoiApiV3 {
 
 		// telephone
 		if (!empty($tel) ) {
-			$params['cellphone'] = $tel;
+			$params['phone'] = $tel;
 		}
 		// cellphone
-		if (!empty($cell) && empty($tel) ) {
+		if (!empty($cell) ) {
 			$params['cellphone'] = $cell;
 		}
 		// birthdate
@@ -1353,11 +1423,14 @@ class EgoiApiV3 {
 		}
 		foreach ( $items as $item ) {
             $product = $item->get_product();
+            $qty     = $item->get_quantity();
+            $price   = $product
+                ? $product->get_price()
+                : ( $qty > 0 ? $item->get_subtotal() / $qty : 0 );
             $output[] = array(
-
 				'product_identifier' => $item->get_product_id(),
 				'name'               => $item->get_name(),
-                'price'              => number_format( $product->get_price(), 2 ),
+                'price'              => number_format( (float) $price, 2 ),
 			);
 		}
 		return $output;
@@ -1377,7 +1450,7 @@ class EgoiApiV3 {
         $order_date = $order->get_date_created();
 
         $payload = array(
-            'order_total' => number_format( $order->get_total(), 2 ),
+            'order_total' => number_format( (float) $order->get_total(), 2 ),
             'order_id'    => $order->get_id(),
             'order_status' => $order_status,
             'cart_id'     => '',
@@ -1445,10 +1518,10 @@ class EgoiApiV3 {
 			$cart['products'][] = array(
 				'product_identifier' => ( $variations && ! empty( $cart_item['variation_id'] ) ) ? $cart_item['variation_id'] : $cart_item['product_id'],
 				'name'               => str_replace( '"', '\\"', $cart_item['data']->get_title() ),
-				'price'              => number_format( $cart_item['data']->get_price(), 2 ),
+				'price'              => number_format( (float) $cart_item['data']->get_price(), 2 ),
 			);
 
-			$cart['total'] += ( number_format( $cart_item['data']->get_price(), 2 ) * (int) $cart_item['quantity'] );
+			$cart['total'] += ( number_format( (float) $cart_item['data']->get_price(), 2 ) * (int) $cart_item['quantity'] );
 		}
 
 		return $cart;
@@ -1505,7 +1578,38 @@ class EgoiApiV3 {
 		$result_client = json_decode( $client->getResponse(), true );
 
 		return $client->getCode() == 200 && isset( $result_client['total_items'] ) ? $result_client['total_items'] : $this->processErrors();
-	} 
+	}
+
+	public function getAutomationsSystem() {
+		$url = self::APIV3 . self::APIURLS[ __FUNCTION__ ];
+
+		$client = new ClientHttp( $url, 'GET', $this->headers );
+		if ($client->success() !== true) {
+			return $this->processErrors( $client->getError() );
+		}
+
+		$resp = json_decode($client->getResponse(), true);
+
+		return $client->getCode() == 200 && isset( $resp['items'] ) ? 
+			$resp['items'] :
+			$this->processErrors();
+	}
+
+	public function updateAutomationsSystem($data) {
+		$url = self::APIV3 . self::APIURLS[ __FUNCTION__ ];
+
+		$client = new ClientHttp($url, 'POST', $this->headers, $data);
+		if ($client->success() !== true) {
+			return $this->processErrors( $client->getError());
+		}
+
+		$resp = json_decode($client->getResponse(), true);
+
+		return $client->getCode() == 200 && isset($resp['type']) ? 
+			$resp :
+			$this->processErrors();
+	}
+		
 
 
 	/**
@@ -1637,13 +1741,31 @@ class ClientHttp {
 			$this->headers   = array();
 			return;
 		}
+
+		// Convert headers from array format 'Header: value' to associative array
+		$formatted_headers = array();
+		if ( is_array( $headers ) ) {
+			foreach ( $headers as $header ) {
+				if ( is_string( $header ) && strpos( $header, ':' ) !== false ) {
+					list( $key, $value ) = explode( ':', $header, 2 );
+					$formatted_headers[ trim( $key ) ] = trim( $value );
+				}
+			}
+		}
+
+		// Convert body to JSON if it's an array
+		$request_body = $body;
+		if ( is_array( $body ) && ! empty( $body ) ) {
+			$request_body = wp_json_encode( $body );
+		}
+
 		$res = wp_remote_request(
 			$url,
 			array(
 				'method'  => $method,
 				'timeout' => 30,
-				'body'    => $body,
-				'headers' => $headers,
+				'body'    => $request_body,
+				'headers' => $formatted_headers,
 			)
 		);
 

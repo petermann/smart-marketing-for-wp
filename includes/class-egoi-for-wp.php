@@ -594,6 +594,8 @@ class Egoi_For_Wp {
 		// E-commerce
 		$this->loader->add_action( 'wp_ajax_egoi_sync_catalog', $plugin_admin, 'egoi_sync_catalog' );
 		$this->loader->add_action( 'wp_ajax_egoi_variations_catalog', $plugin_admin, 'egoi_variations_catalog' );
+		$this->loader->add_action( 'wp_ajax_egoi_related_products_catalog', $plugin_admin, 'egoi_related_products_catalog' );
+		$this->loader->add_action( 'wp_ajax_egoi_related_products_type_catalog', $plugin_admin, 'egoi_related_products_type_catalog' );
 		$this->loader->add_action( 'wp_ajax_egoi_force_import_catalog', $plugin_admin, 'egoi_force_import_catalog' );
 		$this->loader->add_action( 'wp_ajax_egoi_create_catalog', $plugin_admin, 'egoi_create_catalog' );
 		$this->loader->add_action( 'wp_ajax_egoi_delete_catalog', $plugin_admin, 'egoi_delete_catalog' );
@@ -683,6 +685,9 @@ class Egoi_For_Wp {
 		$this->loader->add_action( 'wp_ajax_egoi_simple_form_submit', $plugin_public, 'efwp_process_simple_form_add' );
 		$this->loader->add_action( 'wp_ajax_nopriv_egoi_simple_form_submit', $plugin_public, 'efwp_process_simple_form_add' );
 
+		$this->loader->add_action( 'wp_ajax_egoi_get_security_token', $plugin_public, 'efwp_generate_security_token' );
+		$this->loader->add_action( 'wp_ajax_nopriv_egoi_get_security_token', $plugin_public, 'efwp_generate_security_token' );
+
 		// Newsletter
 		$this->loader->add_action( 'woocommerce_register_form', $plugin_public, 'egoi_add_newsletter_signup', 10 );
 		$this->loader->add_action( 'woocommerce_edit_account_form', $plugin_public, 'egoi_add_newsletter_signup', 10 );
@@ -699,6 +704,10 @@ class Egoi_For_Wp {
 		$this->loader->add_action( 'personal_options_update', $plugin_public, 'egoi_save_account_fields', 10 );
 		$this->loader->add_action( 'woocommerce_save_account_details', $plugin_public, 'egoi_save_account_fields', 10 );
 		$this->loader->add_action( 'woocommerce_new_order', $plugin_public, 'egoi_save_account_fields_order', 10, 1 );
+
+		// WooCommerce Blocks Checkout Field Support
+		$this->loader->add_action( 'woocommerce_init', $plugin_public, 'register_checkout_block_field' );
+		$this->loader->add_action( 'woocommerce_set_additional_field_value', $plugin_public, 'save_checkout_block_field', 10, 4 );
 
 		// Tracking&Engage
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'hookEcommerce', 99999 );
@@ -797,112 +806,6 @@ class Egoi_For_Wp {
     }
 
 	/**
-	 * Check if a tag exists, if not creates, returns id
-	 *
-	 * @param string $tag
-	 * @return int $tag_id
-	 * @throws Exception
-	 */
-	public function createTagVerified( $tag ) {
-		$url = $this->restUrl . 'getTags&' . http_build_query(
-			array(
-				'functionOptions' => array(
-					'apikey'     => $this->_valid['api_key'],
-					'plugin_key' => $this->plugin,
-				),
-			),
-			'',
-			'&'
-		);
-
-		$result_tags = json_decode( $this->_getContent( $url ), true );
-		if ( empty( $result_tags['Egoi_Api']['getTags']['TAG_LIST'] ) || ! is_array( $result_tags['Egoi_Api']['getTags']['TAG_LIST'] ) ) {
-			return 0;
-		}
-
-		foreach ( $result_tags['Egoi_Api']['getTags']['TAG_LIST'] as $tag_resp ) {
-			if ( strcasecmp( $tag_resp['NAME'], $tag ) == 0 ) {
-				return $tag_resp['ID'];
-			}
-		}
-
-		$tag = $this->addTag( $tag );
-		if ( empty( $tag->ID ) ) {
-			return 0;
-		}
-
-		return $tag->ID;
-	}
-
-	/**
-	 * @param $listID
-	 * @param $array
-	 * @param bool   $tag
-	 * @param int    $operation
-	 * @return mixed
-	 * @throws Exception
-	 */
-	public function addSubscriberArray( $listID, $array, $tag = false, $operation = 1 ) {
-
-		if ( is_string( $tag ) ) {
-			$tag = $this->createTagVerified( $tag );
-		}
-
-		$url = $this->restUrl . 'addSubscriberBulk&' . http_build_query(
-			array(
-				'functionOptions' => array(
-					'apikey'       => $this->_valid['api_key'],
-					'plugin_key'   => $this->plugin,
-					'compareField' => 'email',
-					'listID'       => $listID,
-					'operation'    => $operation,
-					'tags'         => is_array( $tag ) ? $tag : array( $tag ),
-					'status'       => 1,
-					'subscribers'  => array( $array ),
-				),
-			),
-			'',
-			'&'
-		);
-
-		$result_client = json_decode( $this->_getContent( $url ) );
-		if ( $result_client->Egoi_Api->addSubscriber->status == 'success' ) {
-			return $result_client->Egoi_Api->addSubscriber;
-		}
-	}
-
-	/**
-	 * @param $listID
-	 * @param $tag
-	 * @param $subscriber
-	 * @return mixed
-	 */
-	public function addSubscriberSoap( $listID, $tag, $subscriber ) {
-		try {
-			$api    = new SoapClient( $this->url );
-			$params = array_merge(
-				array(
-					'apikey'       => $this->_valid['api_key'],
-					'plugin_key'   => $this->plugin,
-					'listID'       => $listID,
-					'compareField' => 'email',
-					'operation'    => '2',
-					'tags'         => is_array( $tag ) ? $tag : array( $tag ),
-				),
-				$subscriber
-			);
-
-			$result = $api->addSubscriber( $params );
-			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/includes/TrackingEngageSDK.php';
-			TrackingEngageSDK::setUidSession( $result );
-		} catch ( Exception $e ) {
-			// continue
-		}
-
-		return $result;
-	}
-
-	/**
 	 * @param bool $listID
 	 * @param bool $option
 	 * @return mixed
@@ -938,9 +841,9 @@ class Egoi_For_Wp {
 
 		$table = $wpdb->prefix . 'egoi_map_fields';
 		if ( $field ) {
-			$sql = "SELECT * FROM $table WHERE wp='$field'";
+			$sql = $wpdb->prepare( "SELECT * FROM $table WHERE wp=%s", $field );
 		} else {
-			$sql = "SELECT * FROM $table WHERE egoi='$name'";
+			$sql = $wpdb->prepare( "SELECT * FROM $table WHERE egoi=%s", $name );
 		}
 		$rows = $wpdb->get_results( $sql );
 
@@ -957,29 +860,6 @@ class Egoi_For_Wp {
 		$table = $wpdb->prefix . 'egoi_map_fields';
 		$sql   = "SELECT * FROM $table order by id DESC";
         return $wpdb->get_results($sql );
-	}
-
-	/**
-	 * @param $name
-	 * @return mixed
-	 */
-	public function addTag( $name ) {
-
-		$url = $this->restUrl . 'addTag&' . http_build_query(
-			array(
-				'functionOptions' => array(
-					'apikey'     => $this->_valid['api_key'],
-					'plugin_key' => $this->plugin,
-					'name'       => sanitize_text_field( $name ),
-				),
-			),
-			'',
-			'&'
-		);
-
-		$result_client = json_decode( $this->_getContent( $url ) );
-
-		return $result_client->Egoi_Api->addTag;
 	}
 
 	/**
@@ -1158,6 +1038,10 @@ class Egoi_For_Wp {
 
 		$simple_map = array();
 		foreach ( $data['fields'] as $field ) {
+			if ( ! is_object( $field ) || ! method_exists( $field, 'get_entry_inputs' ) ) {
+				continue;
+			}
+
 			$inputs = $field->get_entry_inputs();
 
 			if ( is_array( $inputs ) ) {
@@ -1171,38 +1055,52 @@ class Egoi_For_Wp {
 		return $simple_map;
 	}
 
-	/**
-	 * Get E-goi client campaigns
-	 *
-	 * @return mixed
-	 * @throws Exception
-	 */
-	public function getCampaigns() {
-		$url = $this->restUrl . 'getCampaigns&' . http_build_query(
-			array(
-				'functionOptions' => array(
-					'apikey'     => $this->_valid['api_key'],
-					'limit'      => 1000,
-					'plugin_key' => $this->plugin,
-				),
-			),
-			'',
-			'&'
-		);
+    /**
+     * Get E-goi v3 client campaigns
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function getCampaignsByV3()
+    {
+        $apikey = get_option( 'egoi_api_key' );
+        if ( ! empty( $apikey['api_key'] ) ) {
+            $api = new EgoiApiV3( $apikey['api_key'] );
+            $campaignsList = $api->getCampaigns();
 
-		$result_client = json_decode( $this->_getContent( $url ) );
-		$result        = $result_client->Egoi_Api->getCampaigns;
+            if ( empty( $campaignsList ) || ! is_array( $campaignsList ) ) {
+                return [];
+            }
 
-		foreach ( $result as $key => $value ) {
-			if ( is_object($value) && $value->INTERNAL_NAME == '' ) { // remove the double opt-in "campaigns"
-				unset( $result->$key );
-			}
-		}
+            return $campaignsList;
+        }
 
-		return $result;
-	}
+        return [];
+    }
 
-	/**
+    /**
+     * Get E-goi v3 campaign reports
+     */
+    public function getReportsByV3(string $channel, string $campaign_hash): array
+    {
+        $apikey = get_option('egoi_api_key');
+
+        if (empty($apikey['api_key']) || empty($campaign_hash)) {
+            return [];
+        }
+
+        $api    = new EgoiApiV3($apikey['api_key']);
+        $report = $api->getReports($channel, $campaign_hash);
+
+        if (empty($report) || !is_array($report)) {
+            return [];
+        }
+
+        return $report;
+    }
+
+
+    /**
 	 * @param $campaign_hash
 	 * @return mixed
 	 */
@@ -1394,29 +1292,40 @@ class Egoi_For_Wp {
 
 		$options = get_option( Egoi_For_Wp_Admin::OPTION_NAME );
 		$apikey = get_option( 'egoi_api_key' );
-		if ( ! empty( $apikey['api_key'] ) ) {
-			$api = new EgoiApiV3( $apikey['api_key'] );
-			$extra = $api->getExtraFields( empty( $options['list'] ) ? $options->list : $options['list'], 'obj' );
 
-			$egoi_fields = array(
-				'first_name' => __( 'First name', 'egoi-for-wp' ),
-				'last_name'  => __( 'Last name', 'egoi-for-wp' ),
-				'cellphone'  => __( 'Mobile', 'egoi-for-wp' ),
-				'email'      => __( 'Email', 'egoi-for-wp' ),
-				'telephone'  => __( 'Telephone', 'egoi-for-wp' ),
-				'birth_date' => __( 'Birth Date', 'egoi-for-wp' ),
-				'lang'       => __( 'Language', 'egoi-for-wp' ),
-			);
-	
-			if ( ( ! empty( $options->list ) || ! empty( $options['list'] ) ) && $extra ) {
-	
-				foreach ( $extra as $extra_field ) {
-					$egoi_fields[ 'extra_' . $extra_field['field_id'] ] = $extra_field['name'];
-				}
-			}
-	
+		$egoi_fields = array(
+			'first_name' => __( 'First name', 'egoi-for-wp' ),
+			'last_name'  => __( 'Last name', 'egoi-for-wp' ),
+			'cellphone'  => __( 'Mobile', 'egoi-for-wp' ),
+			'email'      => __( 'Email', 'egoi-for-wp' ),
+			'telephone'  => __( 'Telephone', 'egoi-for-wp' ),
+			'birth_date' => __( 'Birth Date', 'egoi-for-wp' ),
+			'lang'       => __( 'Language', 'egoi-for-wp' ),
+		);
+
+		if ( empty( $apikey['api_key'] ) ) {
 			return $egoi_fields;
 		}
+
+		$list_id = is_array( $options ) && ! empty( $options['list'] ) ? $options['list'] : '';
+
+		if ( empty( $list_id ) ) {
+			return $egoi_fields;
+		}
+
+		$api   = new EgoiApiV3( $apikey['api_key'] );
+		$extra = $api->getExtraFields( $list_id, 'obj' );
+
+		if ( is_array( $extra ) ) {
+			foreach ( $extra as $extra_field ) {
+				if ( empty( $extra_field['field_id'] ) ) {
+					continue;
+				}
+				$egoi_fields[ 'extra_' . $extra_field['field_id'] ] = $extra_field['name'];
+			}
+		}
+
+		return $egoi_fields;
 	}
 
 }

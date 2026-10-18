@@ -82,6 +82,13 @@ class Egoi_For_Wp_Admin {
 	protected $options_list;
 	protected $bar_post;
 
+
+	const AUTOMATIONS_SYSTEM_TYPES = [
+		'abandoned_cart',
+		'back_in_stock',
+		'price_drop'
+	];
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -119,7 +126,7 @@ class Egoi_For_Wp_Admin {
 
 		// register options
 		register_setting( self::API_OPTION, self::API_OPTION );
-		register_setting( self::OPTION_NAME, self::OPTION_NAME );
+		register_setting( self::OPTION_NAME, self::OPTION_NAME, array( 'sanitize_callback' => array( $this, 'checkSubscribersForm' ) ) );
 		register_setting( self::BAR_OPTION_NAME, self::BAR_OPTION_NAME );
 
 		// register forms
@@ -335,7 +342,14 @@ class Egoi_For_Wp_Admin {
 			);
 
 			wp_enqueue_script( 'smsnf-notifications-ajax-script', plugin_dir_url( __FILE__ ) . 'js/egoi-for-wp-notifications.js', array( 'jquery' ) );
-			wp_localize_script( 'smsnf-notifications-ajax-script', 'smsnf_notifications_ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
+			wp_localize_script(
+				'smsnf-notifications-ajax-script',
+				'smsnf_notifications_ajax_object',
+				array(
+					'ajax_url'   => admin_url( 'admin-ajax.php' ),
+					'ajax_nonce' => wp_create_nonce( 'egoi_core_actions' ),
+				)
+			);
 
 			if ( get_current_screen()->id == 'smart-marketing_page_egoi-4-wp-dashboard' ) {
 				wp_register_script( $this->plugin_name . 'chartjs', plugin_dir_url( __FILE__ ) . 'js/chartjs/chart.min.js', array( 'jquery' ), true );
@@ -369,7 +383,14 @@ class Egoi_For_Wp_Admin {
 				|| get_current_screen()->id == 'smart-marketing_page_egoi-4-wp-ecommerce' ) {
 
 				wp_enqueue_script( 'smsnf-dashboard-ajax-script', plugin_dir_url( __FILE__ ) . 'js/egoi-for-wp-dashboard.js', array( 'jquery' ) );
-				wp_localize_script( 'smsnf-dashboard-ajax-script', 'smsnf_dashboard_ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
+				wp_localize_script(
+					'smsnf-dashboard-ajax-script',
+					'smsnf_dashboard_ajax_object',
+					array(
+						'ajax_url'   => admin_url( 'admin-ajax.php' ),
+						'ajax_nonce' => wp_create_nonce( 'egoi_core_actions' ),
+					)
+				);
 			}
 		}
 	}
@@ -490,6 +511,7 @@ class Egoi_For_Wp_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'You do not have sufficient permissions to access this page.' );
 		} else {
+			$this->loadAutomationsSystem();
 			include_once 'partials/egoi-for-wp-admin-subscribers.php';
 		}
 
@@ -688,6 +710,11 @@ class Egoi_For_Wp_Admin {
 	* -- HOOKS ---
 	*/
 	public function users_queue() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.');
+		}
+
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 
 		if ( isset( $_POST['submit'] ) && ( $_POST['submit'] ) ) {
 
@@ -831,6 +858,12 @@ class Egoi_For_Wp_Admin {
 
 
    public function orders_queue() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+
+		check_ajax_referer( 'egoi_core_actions', 'security' );
+
         if (isset($_POST['submit']) && $_POST['submit']) {
             try {
                 $listId = $_POST['listID'];
@@ -981,14 +1014,12 @@ class Egoi_For_Wp_Admin {
 			) {
 				return false;
 			}
-			preg_match_all( '/\[[a-zA-Z0-9]+\*? .+\]/', $result->form, $fields_in_form );
+			preg_match_all( '/\[([a-zA-Z0-9]+)\*?\s+([^\s\]]+)/', $result->form, $fields_in_form, PREG_SET_ORDER );
 
 			$mapp = array();
-			foreach ( $fields_in_form[0] as $field ) {
-				$typearr = preg_split( '/\ +/', $field );
-				$type    = ltrim( $typearr[0], '[' );
-				$type    = str_replace( '*', '', $type );
-				$key     = $typearr[1];
+			foreach ( $fields_in_form as $field ) {
+				$type = $field[1];
+				$key  = $field[2];
 				if ( empty( $mapp[ $type ] ) ) {
 					$mapp[ $type ] = $key;
 				}
@@ -1024,22 +1055,32 @@ class Egoi_For_Wp_Admin {
 
 			// telephone
 			$bo  = new EgoiProductsBo();
-            $tel = '';
-            if(!empty($mapp['tel']) && !empty($_POST[$mapp['tel']])) {
-			    $tel = $bo->advinhometerCellphoneCode( sanitize_key( $_POST[$mapp['tel']] ) );
-            }
+			$tel = '';
+			// skip if the field name refers to a mobile number,
+			// it is handled by the cellphone mapping below (avoids duplicates)
+			if ( ! empty( $mapp['tel'] ) 
+				&& strpos( $mapp['tel'], 'cell' ) === false 
+				&& strpos( $mapp['tel'], 'mobile' ) === false 
+				&& strpos( $mapp['tel'], 'telemovel' ) === false 
+				&& strpos( $mapp['tel'], 'telemóvel' ) === false 
+				&& ! empty( $_POST[ $mapp['tel'] ] ) ) {
+				$tel = $bo->advinhometerCellphoneCode( sanitize_key( $_POST[ $mapp['tel'] ] ) );
+			}
 
-            $cell = '';
+			$cell = '';
 			// cellphone
+			$mobile = array();
 			foreach ( $_POST as $key_cell => $value_cell ) {
-				$cell = strpos( $key_cell, 'cell' );
-				if ( $cell !== false ) {
+				if ( strpos( $key_cell, 'cell' ) !== false 
+					|| strpos( $key_cell, 'mobile' ) !== false 
+					|| strpos( $key_cell, 'telemovel' ) !== false 
+					|| strpos( $key_cell, 'telemóvel' ) !== false ) {
 					$mobile[] = sanitize_key( $value_cell );
 				}
 			}
-            if(!empty($mobile[0])) {
-			    $cell = $bo->advinhometerCellphoneCode( sanitize_key( $mobile[0] ) );
-            }
+			if ( ! empty( $mobile[0] ) ) {
+				$cell = $bo->advinhometerCellphoneCode( sanitize_key( $mobile[0] ) );
+			}
 
 			// birthdate
             $bd = '';
@@ -1118,9 +1159,7 @@ class Egoi_For_Wp_Admin {
 				if ( $subject ) { // check if tag exists in E-goi
 					$get_tags = $this->egoiWpApiV3->getTag( $subject );
 					
-					if ( isset( $get_tags->tag_id ) ) {
-						$tag = $get_tags->tag_id;
-					} else if ( isset( $get_tags['tag_id'] )){
+					 if ( isset( $get_tags['tag_id'] )){
 						$tag = $get_tags['tag_id'];
 					}
 				}
@@ -1128,8 +1167,8 @@ class Egoi_For_Wp_Admin {
 				// check if tag cf7 exists in E-goi
                 $cf7tag = '';
 				$get_tg = $this->egoiWpApiV3->getTag( $cf7[0]->post_title );
-				if ( isset( $get_tg->tag_id ) ) {
-					$cf7tag = $get_tg->tag_id;
+				if ( isset( $get_tg['tag_id'] ) ) {
+					$cf7tag = $get_tg['tag_id'];
 				}
 
 				$this->egoiWpApiV3->addContact(
@@ -1150,16 +1189,16 @@ class Egoi_For_Wp_Admin {
 					if ( $subject ) { // check if tag exists in E-goi
 						$get_tags = $this->egoiWpApiV3->getTag( $subject );
 
-						if ( isset( $get_tags->tag_id ) ) {
-							$tag = $get_tags->tag_id;
+						if ( isset( $get_tags['tag_id'] ) ) {
+							$tag = $get_tags['tag_id'];
 						}
 					}
 
 					// check if tag cf7 exists in E-goi
 					$get_tg = $this->egoiWpApiV3->getTag( $cf7[0]->post_title );
 
-					if ( isset( $get_tg->tag_id ) ) {
-						$cf7tag = $get_tg->tag_id;
+					if ( isset( $get_tg['tag_id'] ) ) {
+						$cf7tag = $get_tg['tag_id'];
 					}
 
 					$this->egoiWpApiV3->editContact(
@@ -1276,6 +1315,9 @@ class Egoi_For_Wp_Admin {
 	 * @since    1.0.6
 	 */
 	public function egoi_map_fields_egoi() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
         check_ajax_referer( 'egoi_core_actions', 'security' );
 
         $id    = (int) sanitize_key( $_POST['id_egoi'] );
@@ -1397,6 +1439,10 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function get_form_processed() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 
 		if ( ! empty( $_POST ) ) {
 			echo wp_json_encode( $this->egoiWpApi->getForms( $_POST['listID'] ) );
@@ -1405,6 +1451,11 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function get_lists() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
+
 		if ( ! empty( $_POST ) ) {
 			$lists = $this->egoiWpApiV3->getLists();
 			
@@ -1422,6 +1473,10 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function get_tags() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 
 		if ( ! empty( $_POST ) ) {
 			$tags = $this->egoiWpApiV3->getTags();
@@ -1431,6 +1486,10 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function add_tag( $name ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 
 		if ( ! empty( $_POST ) ) {
 			echo wp_json_encode( $this->egoiWpApiV3->addTag( $name ) );
@@ -1534,8 +1593,8 @@ class Egoi_For_Wp_Admin {
 				$url             = get_permalink( $product->ID );
 
 				if ( isset( $params['decimal_space'] ) && is_numeric( $params['decimal_space'] ) ) {
-					$price = number_format( $price, $params['decimal_space'] );
-					$sale  = number_format( $sale, $params['decimal_space'] );
+					$price = number_format( (float) $price, (int) $params['decimal_space'] );
+					$sale  = number_format( (float) $sale, (int) $params['decimal_space'] );
 				}
 
 				if ( isset( $params['decimal_sep'] ) ) {
@@ -2142,6 +2201,10 @@ class Egoi_For_Wp_Admin {
 		return false;
 	}
 	public function smsnf_show_blog_posts() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 		$posts  = $this->smsnf_get_blog_posts();
 		foreach ( $posts as $key => $post ) {
             ?>
@@ -2170,118 +2233,143 @@ class Egoi_For_Wp_Admin {
 		wp_die();
 	}
 
-	public function smsnf_get_last_campaigns() {
-		$last_campaigns_flag = array(
-			'email'       => 0,
-			'sms_premium' => 0,
-		);
-		$last_campaigns      = array();
-		$channels            = array( 'email', 'sms_premium' );
+    public function smsnf_get_last_campaigns(): array
+    {
+        $lastCampaigns = [];
+        $channels      = ['email', 'sms'];
 
-		$campaigns = $this->egoiWpApi->getCampaigns();
+        $campaigns = $this->egoiWpApi->getCampaignsByV3();
 
-		foreach ( $campaigns as $campaign ) {
+        if (empty($campaigns) || !is_array($campaigns)) {
+            return [];
+        }
 
-			if ( $campaign->STATUS != 'finished' && $campaign->STATUS != 'archived' ) {
-				continue;
-			}
+        foreach ($campaigns as $campaign) {
 
-			if ( ! in_array( 0, $last_campaigns_flag ) ) {
-				break;
-			}
+            if (($campaign['status'] ?? null) !== 'sent') {
+                continue;
+            }
 
-			foreach ( $channels as $channel ) {
+            $channel = $campaign['channel'] ?? null;
 
-				if ( $channel == $campaign->CHANNEL ) {
+            if (!in_array($channel, $channels, true)) {
+                continue;
+            }
 
-					if ( ! isset( $last_campaigns[ $channel ] ) ||
-						(
-							isset( $campaigns_flag[ $channel ] ) &&
-							$campaigns_flag[ $channel ]['name'] == $campaign->SUBJECT &&
-							$campaigns_flag[ $channel ]['start_time'] - strtotime( $campaign->START ) < 300
-						) ) {
+            if (isset($lastCampaigns[$channel])) {
+                continue;
+            }
 
-						$last_campaigns[ $channel ][] = array(
-							'hash'          => $campaign->HASH,
-							'id'            => $campaign->REF,
-							'list'          => $campaign->LISTNUM,
-							'name'          => $this->isJson( $campaign->SUBJECT ) ? json_decode( $campaign->SUBJECT ) : $campaign->SUBJECT,
-							'internal_name' => $this->isJson( $campaign->INTERNAL_NAME ) ? json_decode( $campaign->INTERNAL_NAME ) : $campaign->INTERNAL_NAME,
-							'status'        => $campaign->STATUS,
-						);
-						$campaigns_flag[ $channel ]   = array(
-							'name'       => $campaign->SUBJECT,
-							'start_time' => strtotime( $campaign->START ),
-						);
-					} else {
-						$last_campaigns_flag[ $channel ] = 1;
-					}
-				}
-			}
-		}
-		return $last_campaigns;
-	}
+            $lastCampaigns[$channel][] = [
+                'hash'          => $campaign['campaign_hash'] ?? null,
+                'id'            => $campaign['id'] ?? null,
+                'list'          => $campaign['list_id'] ?? null,
+                'name'          => $campaign['internal_name'] ?? '',
+                'internal_name' => $campaign['internal_name'] ?? '',
+                'status'        => $campaign['status'] ?? '',
+            ];
+
+            if (count($lastCampaigns) === count($channels)) {
+                break;
+            }
+        }
+
+        return $lastCampaigns;
+    }
+
 
 	public function isJson( $string ) {
 		json_decode( $string );
 		return ( json_last_error() == JSON_ERROR_NONE );
 	}
 
-	public function smsnf_last_campaigns_reports() {
+	public function smsnf_last_campaigns_reports(): array
+    {
+        $last_campaigns = $this->smsnf_get_last_campaigns();
+        $reports        = [];
 
-		$last_campaigns = $this->smsnf_get_last_campaigns();
-		$reports        = array();
+        foreach ($last_campaigns as $channel => $campaigns) {
 
-		foreach ( $last_campaigns as $channel => $campaign ) {
+            $reports[$channel] = [
+                'name'          => str_replace('"', '', $campaigns[0]['name']),
+                'internal_name' => str_replace('"', '', $campaigns[0]['internal_name']),
+                'id'            => '',
+                'list'          => '',
+                'sent'          => 0,
+                'chart'         => [
+                    'opens'         => 0,
+                    'clicks'        => 0,
+                    'bounces'       => 0,
+                    'removes'       => 0,
+                    'complains'     => 0,
+                    'delivered'     => 0,
+                    'not_delivered' => 0,
+                ],
+            ];
 
-			$reports[ $channel ] = array(
-				'name'          => str_replace( '"', '', $campaign[0]['name'] ),
-				'internal_name' => str_replace( '"', '', $campaign[0]['internal_name'] ),
-				'id'            => '',
-				'list'          => '',
-				'sent'          => 0,
-				'chart'         => array(
-					'opens'         => 0,
-					'clicks'        => 0,
-					'bounces'       => 0,
-					'removes'       => 0,
-					'complains'     => 0,
-					'delivered'     => 0,
-					'not_delivered' => 0,
-				),
-			);
+            foreach ($campaigns as $value) {
 
-			foreach ( $campaign as $key => $value ) {
-				$report                       = $this->egoiWpApi->getReport( $value['hash'] );
-				if(isset($report)){
-					$reports[ $channel ]['id']   .= $value['id'] . ' | ';
-					$reports[ $channel ]['list'] .= $value['list'] . ' | ';
-					if ( ! isset( $report->ERROR ) ) {
-						$reports[ $channel ]['sent'] += $report->SENT;
-						if ( $channel == 'email' ) {
-							$reports[ $channel ]['chart']['opens']     += $report->UNIQUE_VIEWS;
-							$reports[ $channel ]['chart']['clicks']    += $report->UNIQUE_CLICKS;
-							$reports[ $channel ]['chart']['bounces']   += $report->RETURNED;
-							$reports[ $channel ]['chart']['removes']   += $report->TOTAL_REMOVES;
-							$reports[ $channel ]['chart']['complains'] += $report->COMPLAIN;
-						} elseif ( $channel == 'sms_premium' ) {
-							$reports[ $channel ]['chart']['delivered']     += $report->DELIVERED;
-							$reports[ $channel ]['chart']['not_delivered'] += $report->NOT_DELIVERED;
-						}
-					} else {
-						$reports[ $channel ]['sent'] = $report->ERROR;
-					}
-				}
-			}
+                $report = $this->egoiWpApi->getReportsByV3($channel, $value['hash']);
 
-			$reports[ $channel ]['id']   = substr( $reports[ $channel ]['id'], 0, -2 );
-			$reports[ $channel ]['list'] = substr( $reports[ $channel ]['list'], 0, -2 );
+                if (empty($report)) {
+                    continue;
+                }
 
-		}
-		return $reports;
-	}
+                $reports[$channel]['id']   .= $value['id'] . ' | ';
+                $reports[$channel]['list'] .= $value['list'] . ' | ';
+
+                /** EMAIL */
+                if ($channel === 'email' && isset($report['overall'])) {
+
+                    $overall = $report['overall'];
+
+                    $reports[$channel]['sent'] += (int) ($overall['sends'] ?? 0);
+
+                    $reports[$channel]['chart']['opens'] += (int) ($overall['opens'] ?? 0);
+
+                    $reports[$channel]['chart']['clicks'] += (int) ($overall['clicks'] ?? 0);
+
+                    $reports[$channel]['chart']['bounces'] += (int) (
+                        ($overall['hard_bounces'] ?? 0) +
+                        ($overall['soft_bounces'] ?? 0)
+                    );
+
+                    $reports[$channel]['chart']['removes'] += (int) ($overall['unsubscriptions'] ?? 0);
+
+                    $reports[$channel]['chart']['complains'] += (int) ($overall['complaints'] ?? 0);
+                }
+
+
+                /** SMS */
+                if ($channel === 'sms' && isset($report['overall'])) {
+
+                    $overall = $report['overall'];
+
+                    $reports[$channel]['sent']          += (int) ($overall['sends'] ?? 0);
+                    $reports[$channel]['chart']['delivered']
+                        += (int) ($overall['delivered'] ?? 0);
+
+                    $reports[$channel]['chart']['not_delivered']
+                        += (int) (
+                            ($overall['error'] ?? 0) +
+                            ($overall['invalid'] ?? 0) +
+                            ($overall['pending'] ?? 0)
+                        );
+                }
+            }
+
+            $reports[$channel]['id']   = rtrim($reports[$channel]['id'], ' |');
+            $reports[$channel]['list'] = rtrim($reports[$channel]['list'], ' |');
+        }
+
+        return $reports;
+    }
+
 
 	public function egoi_deploy_rss() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_create_campaign', 'security' );
 
 		if ( ! isset( $_POST['campaing_hash'] ) ) {
@@ -2316,6 +2404,9 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_get_email_senders() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_create_campaign', 'security' );
 
 		$apikey = $this->getApikey();
@@ -2365,6 +2456,9 @@ class Egoi_For_Wp_Admin {
     }
 
 	public function egoi_rss_campaign_webpush() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_create_campaign', 'security' );
 
 		$apikey = $this->getApikey();
@@ -2413,6 +2507,9 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_rss_campaign() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_create_campaign', 'security' );
 
 		$apikey = $this->getApikey();
@@ -2445,6 +2542,9 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_sync_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 		$data = array();
 
@@ -2465,26 +2565,81 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_variations_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 
 		$catalogId = sanitize_text_field( $_POST['catalog_id'] );
 		$status    = sanitize_text_field( $_POST['status'] );
 
 		$bo = new EgoiProductsBo();
-		$bo->setCatalogOptions( $catalogId, array( 'variations' => $status === 'true' ) );
+		$bo->setCatalogOptions( $catalogId, array( 'variations' => $status === 'true' || $status === true ) );
+
+		wp_send_json_success();
+	}
+
+	public function egoi_related_products_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
+
+		$catalogId = sanitize_text_field( $_POST['catalog_id'] );
+		$status    = sanitize_text_field( $_POST['status'] );
+
+		$bo = new EgoiProductsBo();
+		$currentOptions = $bo->getCatalogOptions( $catalogId );
+		$currentOptions['related_products'] = $status === 'true';
+		$bo->setCatalogOptions( $catalogId, $currentOptions );
+
+		wp_send_json_success();
+	}
+
+	public function egoi_related_products_type_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
+
+		$catalogId = sanitize_text_field( $_POST['catalog_id'] );
+		$type      = sanitize_text_field( $_POST['type'] );
+
+		$bo = new EgoiProductsBo();
+		$currentOptions = $bo->getCatalogOptions( $catalogId );
+		$currentOptions['related_products_type'] = $type;
+		$bo->setCatalogOptions( $catalogId, $currentOptions );
 
 		wp_send_json_success();
 	}
 
 	public function egoi_delete_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 		$id = EgoiValidators::validate_id( sanitize_key( $_POST['id'] ) );
 		$bo = new EgoiProductsBo();
 
-		wp_send_json_success( $bo->deleteCatalog( $id ) );
+		$result = $bo->deleteCatalog( $id );
+
+		// Remove catalog from egoi_catalogs_options
+		$catalog_options = get_option( 'egoi_catalogs_options', array() );
+		if ( ! empty( $catalog_options ) ) {
+			$catalog_options = json_decode( $catalog_options, true );
+			if ( is_array( $catalog_options ) && isset( $catalog_options[ $id ] ) ) {
+				unset( $catalog_options[ $id ] );
+				update_option( 'egoi_catalogs_options', wp_json_encode( $catalog_options ) );
+			}
+		}
+
+		wp_send_json_success( $result );
 	}
 
 	public function egoi_create_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 
 		$name       = sanitize_text_field( $_POST['catalog_name'] );
@@ -2492,15 +2647,24 @@ class Egoi_For_Wp_Admin {
 		$currency   = sanitize_text_field( $_POST['catalog_currency'] );
 		$variations = sanitize_text_field( $_POST['variations'] );
 		$tax		= sanitize_text_field( $_POST['catalog_tax'] );
+        $domain     = $this->options_list['domain'] = sanitize_text_field( $_POST['domain'] );
+		$related_products      = isset( $_POST['related_products'] ) ? sanitize_text_field( $_POST['related_products'] ) : '';
+		$related_products_type = isset( $_POST['related_products_type'] ) ? sanitize_text_field( $_POST['related_products_type'] ) : '';
+
 
 		if ( empty( $name ) || empty( $currency ) || empty( $language ) ) {
 			return array( 'error' => __( 'Fields can\'t be empty.', 'egoi-for-wp' ) );
 		}
 
-		$options = array( 'variations' => ! empty( $variations ), 'tax' => $tax );
+		$options = array(
+			'variations'            => ! empty( $variations ),
+			'tax'                   => $tax,
+			'related_products'      => ! empty( $related_products ),
+			'related_products_type' => ! empty( $related_products ) ? ( ! empty( $related_products_type ) ? $related_products_type : 'upsells' ) : ''
+		);
 
 		$bo = new EgoiProductsBo();
-		$id = $bo->createCatalog( $name, $language, $currency, $options );
+		$id = $bo->createCatalog( $name, $language, $currency, $options,  $domain);
 
 		if ( ! empty( $id ) ) {
 			wp_send_json_success(
@@ -2515,6 +2679,9 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_wizard_step() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_core_actions', 'security' );
 
 		switch ( sanitize_text_field( $_POST['step'] ) ) {
@@ -2562,6 +2729,9 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function egoi_force_import_catalog() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 		$id   = EgoiValidators::validate_id( sanitize_key( $_POST['id'] ) );
 		$page = EgoiValidators::validate_page( sanitize_key( $_POST['page'] ) );
@@ -2569,11 +2739,22 @@ class Egoi_For_Wp_Admin {
 
 		$options = EgoiProductsBo::getCatalogOptions( $id );
 		$tax = $options['tax'] ?? 0;
-		
+        $syncRelated = false;
+        $syncRelatedType = '';
+
+
+        // Validate if relatedProducts is enabled and if has any type selected
+        if ( $options['related_products'] ?? false ) {
+            $syncRelated = true;
+            if ( !empty( $options['related_products_type'] ) ) {
+                $syncRelatedType = $options['related_products_type'];
+            }
+        }
+
 		if ( $options['variations'] == 0 ) {
-			$resp = $bo->importProductsCatalogNoVariations( $id, $page, (float) $tax);
+			$resp = $bo->importProductsCatalogNoVariations( $id, $page, (float) $tax, $syncRelated, $syncRelatedType );
 		} else {
-			$resp = $bo->importProductsCatalog( $id, $page, (float) $tax );
+			$resp = $bo->importProductsCatalog( $id, $page, (float) $tax, $syncRelated, $syncRelatedType );
 		}
 		$resp = json_decode( $resp, true );
 
@@ -2588,20 +2769,28 @@ class Egoi_For_Wp_Admin {
 		$form_id = sanitize_text_field( $post['form_id'] );
 		check_admin_referer( $form_id );
 
-		$name       = sanitize_text_field( $post['catalog_name'] );
-		$language   = sanitize_text_field( $post['catalog_language'] );
-		$currency   = sanitize_text_field( $post['catalog_currency'] );
-		$variations = sanitize_text_field( $post['variations'] );
-		$tax		= sanitize_text_field( $post['catalog_tax'] );
+		$name                  = sanitize_text_field( $post['catalog_name'] );
+		$language              = sanitize_text_field( $post['catalog_language'] );
+		$currency              = sanitize_text_field( $post['catalog_currency'] );
+		$domain                = sanitize_text_field( $this->options_list['domain']  );
+        $variations            = isset( $post['variations'] ) ? sanitize_text_field( $post['variations'] ) : '';
+		$tax                   = sanitize_text_field( $post['catalog_tax'] );
+		$related_products      = isset( $post['related_products'] ) ? sanitize_text_field( $post['related_products'] ) : '';
+		$related_products_type = isset( $post['related_products_type'] ) ? sanitize_text_field( $post['related_products_type'] ) : '';
 
 		if ( empty( $name ) || empty( $currency ) || empty( $language ) ) {
 			return array( 'error' => __( 'Fields can\'t be empty.', 'egoi-for-wp' ) );
 		}
 
-		$options = array( 'variations' => ! empty( $variations ), 'tax' => $tax  );
+		$options = array(
+			'variations'            => ! empty( $variations ),
+			'tax'                   => $tax,
+			'related_products'      => ! empty( $related_products ),
+			'related_products_type' => ! empty( $related_products_type ) ? $related_products_type : ''
+		);
 
 		$bo       = new EgoiProductsBo();
-		$response = $bo->createCatalog( $name, $language, $currency, $options );
+		$response = $bo->createCatalog( $name, $language, $currency, $options, $domain);
 		if ( $response !== false ) {
 			return array( 'success' => __( 'Catalog successfully created!', 'egoi-for-wp' ) );
 		} else {
@@ -2613,6 +2802,10 @@ class Egoi_For_Wp_Admin {
 	 * Get Countries and Currencies Utility
 	 * */
 	public function egoi_catalog_utilities() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 		$bo   = new EgoiProductsBo();
 		$data = $bo->getCountriesCurrencies();
 		if ( $data === false ) {
@@ -2653,6 +2846,10 @@ class Egoi_For_Wp_Admin {
 	 * Get Countries and Currencies Utility
 	 */
 	public function egoi_count_products() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_ecommerce_actions', 'security' );
 		$catalog_id = sanitize_key( $_GET['catalog'] );
 		$a          = EgoiProductsBo::getCatalogOptions( $catalog_id );
 
@@ -2801,12 +2998,13 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function smsnf_show_last_campaigns_reports() {
-        if (!current_user_can('manage_options')) {
-            wp_die( 'You do not have sufficient permissions to access this page.' );
-        }
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 		$output = array(
 			'email'       => '',
-			'sms_premium' => '',
+			'sms' => '',
 		);
 
 		$campaigns = $this->smsnf_last_campaigns_reports();
@@ -2820,7 +3018,22 @@ class Egoi_For_Wp_Admin {
 				continue;
 			}
 
-			$campaign_chart   = implode( ',', $campaigns[ $type ]['chart'] );
+			if ( $type === 'email' ) {
+				$campaign_chart = implode( ',', [
+					$campaigns[ $type ]['chart']['opens'],
+					$campaigns[ $type ]['chart']['clicks'],
+					$campaigns[ $type ]['chart']['bounces'],
+					$campaigns[ $type ]['chart']['removes'],
+					$campaigns[ $type ]['chart']['complains']
+				]);
+			} elseif ( $type === 'sms' ) {
+				$campaign_chart = implode( ',', [
+					$campaigns[ $type ]['chart']['delivered'],
+					$campaigns[ $type ]['chart']['not_delivered']
+				]);
+			} else {
+				$campaign_chart = implode( ',', $campaigns[ $type ]['chart'] );
+			}
 			$type_clean       = str_replace( '_premium', '', $type );
 			$output[ $type ] .= '
                 <table class="table smsnf-dashboard-campaigns--table">
@@ -2868,7 +3081,7 @@ class Egoi_For_Wp_Admin {
                         "rgba(242, 91, 41, 0.5)",
                         "rgba(237, 60, 47, 0.7)"
                     ];
-				} elseif ( $type == 'sms_premium' ) {
+				} elseif ( $type == 'sms' ) {
 					$labels           = ['Entregues', 'Não Entregues'];
 					$background_color = ['rgba(147, 189, 77, 0.3)', 'rgba(250, 70, 19, 0.4'];
 					$border_color     = ['rgba(147, 189, 77, 0.4)', 'rgba(250, 70, 19, 0.5)'];
@@ -2935,6 +3148,10 @@ class Egoi_For_Wp_Admin {
 
 
 	public function smsnf_hide_notification() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 		$notifications                           = get_option( 'egoi_notifications' );
 		$notifications[ $_POST['notification'] ] = current_time( 'mysql' );
 		update_option( 'egoi_notifications', $notifications );
@@ -3084,9 +3301,10 @@ class Egoi_For_Wp_Admin {
 	}
 
 	public function smsnf_show_account_info_ajax() {
-        if (!current_user_can('manage_options')) {
-            wp_die( 'You do not have sufficient permissions to access this page.' );
-        }
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
+		check_ajax_referer( 'egoi_core_actions', 'security' );
 		$output = $this->smsnf_show_account_info( 'smart-marketing-dashboard' );
 		wp_send_json_success($output);
 	}
@@ -3243,6 +3461,9 @@ class Egoi_For_Wp_Admin {
 	 * Used to fetch mapped fields and mappable
 	 * */
 	public function egoi_get_mapping_n_fields() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_create_campaign', 'security' );// could: change object
 
 		if ( empty( $_POST['id'] ) ) {
@@ -3386,6 +3607,9 @@ class Egoi_For_Wp_Admin {
     }
 
 	public function egoi_synchronize_subs() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		check_ajax_referer( 'egoi_core_actions', 'security' );
 		$page = sanitize_text_field( $_POST['page'] );
 
@@ -3587,6 +3811,12 @@ class Egoi_For_Wp_Admin {
 	public function generate_mail_catcher( $exceptions = null ) {
 
 			require_once ABSPATH . '/wp-includes/PHPMailer/PHPMailer.php';
+			if ( file_exists( ABSPATH . '/wp-includes/PHPMailer/Exception.php' ) ) {
+				require_once ABSPATH . '/wp-includes/PHPMailer/Exception.php';
+			}
+			if ( file_exists( ABSPATH . '/wp-includes/PHPMailer/SMTP.php' ) ) {
+				require_once ABSPATH . '/wp-includes/PHPMailer/SMTP.php';
+			}
 			require_once plugin_dir_path( __FILE__ ) . '../includes/transactionalemail/mail-catcher.php';
 			$mail_catcher = new MailCatcher();
 
@@ -3603,8 +3833,26 @@ class Egoi_For_Wp_Admin {
 				<?php
 				echo sprintf(
 					esc_html__( 'Error sending an email with E-goi Transactional Email:  %s  ', 'egoi-for-wp' ),
-					$option['detail']
+					esc_html( $option['detail'] )
 				);
+				if ( ! empty( $option['code'] ) ) {
+					echo esc_html(
+						sprintf(
+							/* translators: %s: HTTP status code returned by the API */
+							__( '(HTTP status: %s)', 'egoi-for-wp' ),
+							$option['code']
+						)
+					);
+				}
+				if ( ! empty( $option['time'] ) ) {
+					echo esc_html(
+						sprintf(
+							/* translators: %s: date/time the error was recorded */
+							__( ' — since %s', 'egoi-for-wp' ),
+							$option['time']
+						)
+					);
+				}
 				?>
 				 <a href="?transactional-email-dismissed">Dismiss</a></p>
 			</div>
@@ -3681,6 +3929,62 @@ class Egoi_For_Wp_Admin {
 
 		$wpdb->query( $sql );
 
+	}
+
+	public function loadAutomationsSystem() {
+
+		//force default
+		foreach ( self::AUTOMATIONS_SYSTEM_TYPES as $type ) {
+			$this->options_list[$type] = 0;
+		}
+
+		$respAutomationsSystem = $this->egoiWpApiV3->getAutomationsSystem();
+
+		if ( ! is_array( $respAutomationsSystem ) ) {
+			error_log( 'E-goi: getAutomationsSystem returned an unexpected response type: ' . gettype( $respAutomationsSystem ) );
+			return;
+		}
+
+		$automaionsSystem = array_filter($respAutomationsSystem, function($item) {
+            return in_array($item['type'], self::AUTOMATIONS_SYSTEM_TYPES);
+        });
+
+		if (!empty($automaionsSystem)) {
+			foreach ($automaionsSystem as $automation) {
+				if ($automation['paused'] == 'true') {
+					$this->options_list[$automation['type']] = 0;
+				} else {
+					if ($automation['url'] == $this->options_list['domain']) {
+						$this->options_list[$automation['type']] = (int)!$automation['paused'];
+					} else {
+						$this->options_list[$automation['type']] = 'used_in_another_domain';
+					}
+				}
+			}
+		}
+		update_option( self::OPTION_NAME, $this->options_list );
+	}
+
+	public function checkSubscribersForm($formData) {
+		$old = get_option(self::OPTION_NAME, array());
+
+		foreach (self::AUTOMATIONS_SYSTEM_TYPES as $type) {
+			$newAutomationSystemValue = isset($formData[$type] ) ? (int) $formData[$type] : 0;
+			$oldAutomationSystemValue = isset($old[$type] ) ? (int) $old[$type] : 0;
+
+			if ($newAutomationSystemValue !== $oldAutomationSystemValue) {
+				$domain = $formData['domain'] ?? $this->options_list['domain'];
+
+				$payloadData = [
+					'type' => $type,
+					'paused' => (bool) !$newAutomationSystemValue,
+					'domain' => $domain
+				];
+				$this->egoiWpApiV3->updateAutomationsSystem($payloadData);
+			}
+		}
+
+		return $formData;
 	}
 
 }

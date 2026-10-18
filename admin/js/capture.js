@@ -102,7 +102,7 @@
     
     /* Get lists from e-goi */
     if (select_lists.length) {
-        $.post(url_egoi_script.ajaxurl, {action: 'egoi_get_lists'}, function(response) {
+        $.post(url_egoi_script.ajaxurl, {action: 'egoi_get_lists', security: egoi_config_ajax_object_core.ajax_nonce}, function(response) {
             var lists = JSON.parse(response);
 
             $.each(lists, function(key, val) {
@@ -128,7 +128,7 @@
             $('#form_list_group').slideDown();
             $('#empty-forms').slideUp();
 
-            $.post(url_egoi_script.ajaxurl, {action: 'efwp_get_form_from_list', listID: list_id})
+            $.post(url_egoi_script.ajaxurl, {action: 'efwp_get_form_from_list', listID: list_id, security: egoi_config_ajax_object_core.ajax_nonce})
             .done(function(response) {
                 var forms = JSON.parse(response);
                 select_forms.find("option").not(':first').remove();
@@ -161,7 +161,7 @@
 
     function get_list_tag_from_egoi() {
 
-        $.post(url_egoi_script.ajaxurl, {action: 'egoi_get_tags'}, function(response) {
+        $.post(url_egoi_script.ajaxurl, {action: 'egoi_get_tags', security: egoi_config_ajax_object_core.ajax_nonce}, function(response) {
             var tags = JSON.parse(response);
 
             $.each(tags, function(key, val) {
@@ -424,7 +424,8 @@
 
         var data = {
             action: 'egoi_add_tag',
-            name:   input.val()
+            name:   input.val(),
+            security: egoi_config_ajax_object_core.ajax_nonce
         };
         $.post(url_egoi_script.ajaxurl, data, function(response) {
             var tag = JSON.parse(response);

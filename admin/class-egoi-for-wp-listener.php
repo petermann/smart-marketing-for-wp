@@ -54,32 +54,34 @@ class Egoi_For_Wp_Listener {
 
 		$api = new EgoiApiV3( $this->getApikey() );
 
+		$subHaveEgoiNewsletterActive = null;
 		$subscriber_tags = array();
 		if ( ! empty( $user->egoi_newsletter_active ) || ! empty( $_POST['egoi_newsletter_active'] ) ) {
 			$tag = $api->getTag( Egoi_For_Wp::TAG_NEWSLETTER );
 
-			if(isset($tag->tag_id)){
-				array_push($subscriber_tags, $tag->tag_id);
+			$subHaveEgoiNewsletterActive = true;
+			if(isset($tag['tag_id'])){
+				array_push($subscriber_tags, $tag['tag_id']);
 			}
 		}
 
 		$fields = $this->get_default_map( array_merge( $_POST, (array) $user->data ) );
 		if ( get_option( 'egoi_mapping' ) ) {
-			$fields = $this->mapping_extras_subscriber( $user, $user_id, $fields );
+			$fields = $this->mapping_extras_subscriber( $user, $user_id, $fields, $subHaveEgoiNewsletterActive );
 		}
 
 		$fields['base']['email'] = ! empty( $fields['email'] ) ? $fields['email'] : $user->user_email;
 
 		$tag = $api->getTag( $user->roles[0] );
-		if(isset($tag->tag_id)){
-			array_push($subscriber_tags, $tag->tag_id);
+		if(isset($tag['tag_id'])){
+			array_push($subscriber_tags, $tag['tag_id']);
 		}
 
 		$api->addContact(
 			$list,
 			$fields['base']['email'],
 			$fields['base']['first_name'],
-			$fields['base']['last_name'],
+            $fields['base']['last_name'],
 			!empty($fields['extra']) ? $fields['extra'] : array(),
 			1,
 			array( 'cell' => $fields['base']['cellphone'] ),
@@ -117,13 +119,14 @@ class Egoi_For_Wp_Listener {
 		);
 	}
 
-	private function mapping_extras_subscriber( $user, $user_id, $fields = array() ) {
+	private function mapping_extras_subscriber( $user, $user_id, $fields = array(), $userHaveEgoiNewsletterActive = null ) {
 		$admin = new Egoi_For_Wp();
 
 		$all_fields                  = get_user_meta( $user_id );
 		$all_fields['user_email'][0] = $user->user_email;
 		$all_fields['user_url'][0]   = $user->user_url;
 		$all_fields['user_login'][0] = $user->user_login;
+		$all_fields['newsletter'][0] = ($userHaveEgoiNewsletterActive) ? 'true' : 'false';
 
 		if ( is_array( $_POST ) ) {
 			foreach ( $_POST as $key => $item ) {

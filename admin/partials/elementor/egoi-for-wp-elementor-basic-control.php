@@ -378,18 +378,14 @@ class EgoiElementorWidget extends Widget_Base {
 		$classes_form    = $settings['direction_form'];
 		$position_button = $settings['position_button'];
 
-        $nonce = uniqid('egoi_validator_');
-        set_transient('egoi_validator_' . $nonce, true, 3600);
-
-
+        $form_id = 'elementor-egoi-form-' . $widget_id;
         ?>
-		<form id="elementor-egoi-form" method="post" action="/">
+		<form id="<?php echo esc_attr($form_id) ?>" method="post" action="/">
 		<div class="egoi_elementor_form_wrapper_custom <?php echo esc_attr($classes_form) ?>" >
 		<input type="hidden" id="egoi_tag" name="egoi_tag" value="<?php echo esc_attr($settings['tag_name']) ?>">
 		<input type="hidden" id="elementorEgoiForm" name="elementorEgoiForm" value="<?php echo esc_attr($widget_id) ?>">
 		<input type="hidden" id="egoi_list" name="egoi_list" value="<?php echo esc_attr($options['list']) ?>">
 		<input type="hidden" id="egoi_double_optin" name="egoi_double_optin" value="<?php echo esc_attr($settings['double_optin']) ?>">
-        <input type="hidden" name="security" id="security"  value="<?php echo $nonce ?>">
 
             <?php
 		if ( 'yes' == $settings['redirect_option'] ) {
@@ -468,7 +464,7 @@ class EgoiElementorWidget extends Widget_Base {
                              }, 5000);
                     }
                     
-                    var form = $("#elementor-egoi-form");
+                    var form = $("#<?php echo esc_attr($form_id) ?>");
                     form.submit(function(e){
                         e.preventDefault();
                         jQuery( "#<?php echo esc_attr($message_box_id) ?>" ).slideUp( "slow" );
@@ -479,26 +475,44 @@ class EgoiElementorWidget extends Widget_Base {
                             return false;
                         }
                         submitButton.prop("disabled", true);
-                        var posting = jQuery.post(ajaxurl, inputData);
-    
-                        posting.done(function( data ) {
-                            console.log(data)
-                            if (data.substring(0, 5) != "ERROR") {
-                                displayMessage(data, "success")
-								
-                                if(inputData.egoi_redirect !== undefined){
-                                    setTimeout(function(){
-                                        window.location.href = inputData.egoi_redirect;
-                                     }, 3000);
+
+                        // Fetched fresh on every submit (never baked into the cached page
+                        // markup) so page/CDN caching can't serve a stale, already-used
+                        // or expired token — see BB-26982. The "_" cache-buster keeps this
+                        // request unique per call even against caches that key purely on
+                        // URL/body and ignore the no-cache response headers.
+                        var tokenRequest = jQuery.post(ajaxurl, { action: "egoi_get_security_token", _: Date.now() + "_" + Math.random() });
+
+                        tokenRequest.done(function (token) {
+                            inputData["security"] = token;
+                            var posting = jQuery.post(ajaxurl, inputData);
+
+                            posting.done(function( data ) {
+                                console.log(data)
+                                if (data.substring(0, 5) != "ERROR") {
+                                    displayMessage(data, "success")
+
+                                    if(inputData.egoi_redirect !== undefined){
+                                        setTimeout(function(){
+                                            window.location.href = inputData.egoi_redirect;
+                                         }, 3000);
+                                    }
+                                } else {
+                                    displayMessage(data)
                                 }
-                            } else {
-                                displayMessage(data)
-                            }
-                            submitButton.prop("disabled", false);
-                            
+                                submitButton.prop("disabled", false);
+                            });
+
+                            posting.fail(function () {
+                                displayMessage("<?php _e( 'ERROR: invalid data submitted', 'egoi-for-wp' ) ?>")
+                                submitButton.prop("disabled", false);
+                            });
                         });
-                        
-                        
+
+                        tokenRequest.fail(function () {
+                            displayMessage("<?php _e( 'ERROR: invalid data submitted', 'egoi-for-wp' ) ?>")
+                            submitButton.prop("disabled", false);
+                        });
                     });
                 });
 
